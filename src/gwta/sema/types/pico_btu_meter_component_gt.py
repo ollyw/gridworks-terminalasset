@@ -1,8 +1,9 @@
 from typing import Literal
-from pydantic import StrictInt
+from pydantic import StrictInt, model_validator
 from gwta.sema.base import SemaType
 from gwta.sema.enums import GpmFromHzMethod
 from gwta.sema.enums import HzCalcMethod
+from gwta.sema.enums import PicoBoardVariant
 from gwta.sema.enums import TempCalcMethod
 from gwta.sema.property_format import PascalCase
 from gwta.sema.property_format import PositiveFloat
@@ -15,7 +16,6 @@ class PicoBtuMeterComponentGt(SemaType):
 
     component_id: UUID4Str
     device_type: PascalCase
-    enabled: bool
     serial_number: str
     flow_channel_name: SpaceheatName
     hot_channel_name: SpaceheatName
@@ -34,5 +34,35 @@ class PicoBtuMeterComponentGt(SemaType):
     async_capture_delta_ct_volts_x100: StrictInt | None = None
     display_name: str | None = None
     hw_uid: str | None = None
+    pico_board_variant: PicoBoardVariant
+    micropython_version: str | None = None
     type_name: Literal["pico.btu.meter.component.gt"] = "pico.btu.meter.component.gt"
     version: Literal["000"] = "000"
+
+    @model_validator(mode="after")
+    def check_axiom_1(self) -> "PicoBtuMeterComponentGt":
+        """
+        Axiom 1: ReadCtVoltageIffCtVoltsDelta
+        ReadCtVoltage SHALL be true iff AsyncCaptureDeltaCtVoltsX100 is present.
+        """
+        if bool(self.read_ct_voltage) != (
+            self.async_capture_delta_ct_volts_x100 is not None
+        ):
+            raise ValueError(
+                "Axiom 1: ReadCtVoltage must be true exactly when "
+                "AsyncCaptureDeltaCtVoltsX100 is present."
+            )
+        return self
+
+    @model_validator(mode="after")
+    def check_axiom_2(self) -> "PicoBtuMeterComponentGt":
+        """
+        Axiom 2: ReadCtVoltageIffCtChannelName
+        ReadCtVoltage SHALL be true iff CtChannelName is present.
+        """
+        if bool(self.read_ct_voltage) != (self.ct_channel_name is not None):
+            raise ValueError(
+                "Axiom 2: ReadCtVoltage must be true exactly when "
+                "CtChannelName is present."
+            )
+        return self

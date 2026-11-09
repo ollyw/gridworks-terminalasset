@@ -30,8 +30,6 @@ properties:
   HwUid:
     type: string
 
-  Enabled:
-    type: boolean
 
   PicoHwUid:
     type: string
@@ -63,13 +61,23 @@ properties:
   SerialNumber:
     type: string
 
-  AsyncCaptureDeltaMicroVolts:
-    type: integer
-
   SensorOrder:
     type: array
     items:
       type: integer
+
+  SimLifeS:
+    $ref: "https://schemas.electricity.works/formats/positive.int"
+    description: >
+      Seconds the simulated pico posts readings after each boot before
+      it goes silent. Absent means it never dies on a schedule.
+
+  SimRebootS:
+    $ref: "https://schemas.electricity.works/formats/positive.int"
+    description: >
+      Seconds after the vdc relay closes, following an open, before the
+      simulated pico boots and posts again. Absent means a dead pico
+      stays dead.
 
   SimulatesTypeName:
     const: "pico.tank.module.component.gt"
@@ -86,14 +94,12 @@ properties:
 required:
   - ComponentId
   - DeviceType
-  - Enabled
   - TempCalcMethod
   - ThermistorBeta
   - SendMicroVolts
   - Samples
   - NumSampleAverages
   - SerialNumber
-  - AsyncCaptureDeltaMicroVolts
   - SimulatesTypeName
   - SimulatesVersion
   - TypeName
@@ -106,14 +112,12 @@ examples:
     {
       "ComponentId": "4058e925-2399-4908-91a1-5c4c63cf89f0",
       "DeviceType": "GridworksTankModule3",
-      "Enabled": false,
       "TempCalcMethod": "SimpleBeta",
       "ThermistorBeta": 1,
       "SendMicroVolts": false,
       "Samples": 1,
       "NumSampleAverages": 1,
       "SerialNumber": "example",
-      "AsyncCaptureDeltaMicroVolts": 0,
       "SimulatesTypeName": "pico.tank.module.component.gt",
       "SimulatesVersion": "012",
       "TypeName": "sim.pico.tank.module.component.gt",
@@ -149,4 +153,8 @@ x-gridworks:
 
     DeviceType values come from the `gw1.device.type` vocabulary; the hardware layout enforces membership.
 
-    Simulates `pico.tank.module.component.gt`. Kin: `sim.relay.component.gt`. Kin: `sim.sensor.component.gt`.
+    SimLifeS and SimRebootS script the simulated pico's liveness (posts, dies,
+    reboots after a vdc power cycle) so the pico-cycler loop can be exercised
+    on a simulated layout.
+
+    Simulates `pico.tank.module.component.gt`. Kin: `sim.sensor.component.gt`.

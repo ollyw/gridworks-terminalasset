@@ -2,6 +2,7 @@ from typing import Literal
 from pydantic import model_validator
 from gwta.sema.base import SemaType
 from gwta.sema.enums import TelemetryName
+from gwta.sema.property_format import NonNegativeInt
 from gwta.sema.property_format import PascalCase
 from gwta.sema.property_format import PositiveInt
 from gwta.sema.types.i2c_bus import I2cBus
@@ -30,6 +31,7 @@ class ScadaDeviceTypeGt(SemaType):
     muxes: list[I2cMux]
     i2c_relays: list[I2cRelayCapability]
     supports_pin_readback: bool
+    relay_energized_level: NonNegativeInt
     ct_adc: I2cCtInterfaceCapability | None = None
     thermistor_adcs: list[I2cThermistorInterfaceCapability]
     dacs: list[I2cDacCapability]
@@ -111,8 +113,9 @@ class ScadaDeviceTypeGt(SemaType):
         """
         Axiom 4: MuxConsistency
         a. Every MuxName referenced by an entry in Dacs SHALL appear as a
-        MuxName in Muxes. b. Every Dacs entry carrying MuxChannel SHALL satisfy
-        MuxChannel less than the Channels of the mux named by its MuxName.
+        MuxName in Muxes.
+        b. Every Dacs entry carrying MuxChannel SHALL satisfy MuxChannel less
+        than the Channels of the mux named by its MuxName.
         c. Every Dacs entry carrying MuxName SHALL have an I2cBus equal to
         that mux's I2cBus.
         """
@@ -123,21 +126,49 @@ class ScadaDeviceTypeGt(SemaType):
             mux = muxes.get(dac.mux_name)
             if mux is None:
                 raise ValueError(
-                    "Axiom 4 (MuxConsistency) failed: Dacs entry "
+                    "Axiom 4 (MuxConsistency, clause a) failed: Dacs entry "
                     f"{dac.dac_name} references MuxName {dac.mux_name}, "
                     "which is not declared in Muxes."
                 )
             if dac.mux_channel is not None and dac.mux_channel >= mux.channels:
                 raise ValueError(
-                    "Axiom 4 (MuxConsistency) failed: Dacs entry "
+                    "Axiom 4 (MuxConsistency, clause b) failed: Dacs entry "
                     f"{dac.dac_name} has MuxChannel {dac.mux_channel}, not "
                     f"less than the {mux.channels} Channels of mux "
                     f"{dac.mux_name}."
                 )
             if dac.i2c_bus != mux.i2c_bus:
                 raise ValueError(
-                    "Axiom 4 (MuxConsistency) failed: Dacs entry "
+                    "Axiom 4 (MuxConsistency, clause c) failed: Dacs entry "
                     f"{dac.dac_name} has I2cBus {dac.i2c_bus} but its mux "
                     f"{dac.mux_name} is on {mux.i2c_bus}."
                 )
+        return self
+
+    @model_validator(mode="after")
+    def check_axiom_5(self) -> "ScadaDeviceTypeGt":
+        """
+        Axiom 5: RelayEnergizedLevelRange
+        RelayEnergizedLevel SHALL be 0 or 1.
+        """
+        if self.relay_energized_level not in (0, 1):
+            raise ValueError(
+                "Axiom 5 (RelayEnergizedLevelRange) failed: RelayEnergizedLevel "
+                f"{self.relay_energized_level} must be 0 or 1."
+            )
+        return self
+
+    @model_validator(mode="after")
+    def check_axiom_6(self) -> "ScadaDeviceTypeGt":
+        """
+        Axiom 6: SingleBus
+        BusList SHALL have exactly one entry: a scada process drives one bus,
+        and the bus actor opens that entry's adapter. (Retired by the
+        multi-bus work, which replaces this axiom with per-bus binding.)
+        """
+        if len(self.bus_list) != 1:
+            raise ValueError(
+                "Axiom 6 (SingleBus) failed: BusList declares "
+                f"{len(self.bus_list)} buses; exactly one is required."
+            )
         return self

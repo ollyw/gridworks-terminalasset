@@ -19,8 +19,6 @@ properties:
       The device category this component is built on, an open
       pascal-case string.
 
-  Enabled:
-    type: boolean
 
   SerialNumber:
     type: string
@@ -84,6 +82,17 @@ properties:
   HwUid:
     type: string
 
+  PicoBoardVariant:
+    $ref: "https://schemas.electricity.works/enums/pico.board.variant/000"
+    description: >
+      The physical board this pico was provisioned on.
+
+  MicropythonVersion:
+    type: string
+    description: >
+      The MicroPython release this pico was provisioned with, as
+      `os.uname().release` reports it.
+
   TypeName:
     const: "pico.btu.meter.component.gt"
 
@@ -93,7 +102,6 @@ properties:
 required:
   - ComponentId
   - DeviceType
-  - Enabled
   - SerialNumber
   - FlowChannelName
   - HotChannelName
@@ -108,6 +116,7 @@ required:
   - GallonsPerPulse
   - AsyncCaptureDeltaGpmX100
   - AsyncCaptureDeltaCelsiusX100
+  - PicoBoardVariant
   - TypeName
   - Version
 
@@ -117,8 +126,7 @@ examples:
   - |
     {
       "ComponentId": "7fc24a16-37e6-442b-83cb-9b5be5a3cce9",
-      "DeviceType": "GridworksGw101",
-      "Enabled": false,
+      "DeviceType": "Gw101",
       "SerialNumber": "example",
       "FlowChannelName": "scada",
       "HotChannelName": "scada",
@@ -133,11 +141,22 @@ examples:
       "GallonsPerPulse": 1,
       "AsyncCaptureDeltaGpmX100": 0,
       "AsyncCaptureDeltaCelsiusX100": 0,
+      "PicoBoardVariant": "PicoRaspberryWifi2040",
       "TypeName": "pico.btu.meter.component.gt",
       "Version": "000"
     }
 x-gridworks:
   owner: "gridworks-energy"
+
+  axioms:
+    - number: 1
+      name: "ReadCtVoltageIffCtVoltsDelta"
+      statement: >
+        ReadCtVoltage SHALL be true iff AsyncCaptureDeltaCtVoltsX100 is present.
+    - number: 2
+      name: "ReadCtVoltageIffCtChannelName"
+      statement: >
+        ReadCtVoltage SHALL be true iff CtChannelName is present.
 
   extended_description: >
     `DeviceType` and `FlowMeterType` are open `pascal.case` strings. The device-type

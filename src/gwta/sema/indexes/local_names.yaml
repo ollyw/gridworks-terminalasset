@@ -4,19 +4,25 @@ enums:
   g.node.status: g.node.status
   gpio.sense.mode: gpio.sense.mode
   gpm.from.hz.method: gpm.from.hz.method
-  gw.house0.primary.flow.source: house0.primary.flow.source
+  gw.circulator.role: circulator.role
+  gw.primary.flow.source: primary.flow.source
+  gw.primary.pump.owner: primary.pump.owner
+  gw.refrigerant.cycle: refrigerant.cycle
+  gw.zone.emitter.type: zone.emitter.type
   gw1.actor.class: actor.class
   gw1.emission.method: emission.method
   gw1.quantity: quantity
   gw1.unit: unit
+  gw2.lc.top.state: gw2.lc.top.state
   hz.calc.method: hz.calc.method
   i2c.adc.channel: i2c.adc.channel
   i2c.adc.type: i2c.adc.type
   i2c.dac.channel: i2c.dac.channel
   i2c.dac.type: i2c.dac.type
-  i2c.dac.vref: i2c.dac.vref
+  i2c.expander.type: i2c.expander.type
   i2c.mux.type: i2c.mux.type
   i2c.operation: i2c.operation
+  pico.board.variant: pico.board.variant
   relay.closed.or.open: relay.closed.or.open
   relay.wiring.config: relay.wiring.config
   spaceheat.telemetry.name: telemetry.name
@@ -24,15 +30,15 @@ enums:
   temp.calc.method: temp.calc.method
   thermistor.data.method: thermistor.data.method
   thermostat.kind: thermostat.kind
-  zone.actuator.kind: zone.actuator.kind
-  zone.circuit.role: zone.circuit.role
   zone.setpoint.source: zone.setpoint.source
 types:
   ads.channel.config: ads.channel.config
   ads111x.based.component.gt: ads111x.based.component.gt
   ads111x.based.device.type.gt: ads111x.based.device.type.gt
+  dac.output.config: dac.output.config
   data.channel.gt: data.channel.gt
   derived.channel.gt: derived.channel.gt
+  device.component.gt: device.component.gt
   dfr.component.gt: dfr.component.gt
   dfr.config: dfr.config
   egauge.register.config: egauge.register.config
@@ -42,10 +48,15 @@ types:
   g.node.gt: g.node.gt
   gpio.relay.component.gt: gpio.relay.component.gt
   gpio.sensor.component.gt: gpio.sensor.component.gt
+  gw.boiler.backup: boiler.backup
+  gw.circulator: circulator
+  gw.element.backup: element.backup
   gw.house0.layout: house0.layout
   gw.hydronic: hydronic
+  gw.katahdin.layout: katahdin.layout
   gw.native.gpio.pin: native.gpio.pin
   gw.nolan.layout: nolan.layout
+  gw.water.store: water.store
   gw0.required.energy.layered: gw0.required.energy.layered
   gw0.usable.energy.layered: gw0.usable.energy.layered
   gw1.hvac.zone: hvac.zone
@@ -56,6 +67,8 @@ types:
   gw1.zone.thermostat: zone.thermostat
   gw108.gpio.sensor.component.gt: gw108.gpio.sensor.component.gt
   gw108.vdc.relay.component.gt: gw108.vdc.relay.component.gt
+  hp.control.box.device.type.gt: hp.control.box.device.type.gt
+  hp.device.type.gt: hp.device.type.gt
   hubitat.component.gt: hubitat.component.gt
   hubitat.gt: hubitat.gt
   hubitat.poller.component.gt: hubitat.poller.component.gt
@@ -64,8 +77,7 @@ types:
   i2c.bus: i2c.bus
   i2c.ct.interface.capability: i2c.ct.interface.capability
   i2c.dac.capability: i2c.dac.capability
-  i2c.dac.channel.config: i2c.dac.channel.config
-  i2c.dac.writer.component.gt: i2c.dac.writer.component.gt
+  i2c.dac.output.component.gt: i2c.dac.output.component.gt
   i2c.expander: i2c.expander
   i2c.multichannel.dt.relay.component.gt: i2c.multichannel.dt.relay.component.gt
   i2c.mux: i2c.mux
@@ -88,9 +100,9 @@ types:
   relay.actor.config: relay.actor.config
   relay.control.config: relay.control.config
   scada.board.component.gt: scada.board.component.gt
-  sim.dac.writer.component.gt: sim.dac.writer.component.gt
+  sim.pico.btu.meter.component.gt: sim.pico.btu.meter.component.gt
+  sim.pico.flow.module.component.gt: sim.pico.flow.module.component.gt
   sim.pico.tank.module.component.gt: sim.pico.tank.module.component.gt
-  sim.relay.component.gt: sim.relay.component.gt
   sim.sensor.component.gt: sim.sensor.component.gt
   spaceheat.node.gt: spaceheat.node.gt
   spaceheat.telemetry.quantity.projection: spaceheat.telemetry.quantity.projection

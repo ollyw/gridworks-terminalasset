@@ -5,13 +5,13 @@
   "DeviceType": "HoneywellT6Thermostat",
   "Poller": {
     "TypeName": "hubitat.poller.gt",
-    "Version": "000",
+    "Version": "001",
     "HubitatComponentId": "2f51577c-1c95-4d91-b1aa-ec89d302e821",
     "DeviceId": 1,
     "Attributes": [
       {
         "TypeName": "maker.api.attribute.gt",
-        "Version": "000",
+        "Version": "001",
         "AttributeName": "example",
         "ChannelName": "scada",
         "NodeName": "scada",
@@ -19,14 +19,12 @@
         "Unit": "Unknown",
         "Exponent": 0,
         "InterpretAsNumber": false,
-        "Enabled": false,
         "WebPollEnabled": false,
         "WebListenEnabled": false,
         "ReportMissing": false,
         "ReportParseError": false
       }
     ],
-    "Enabled": false,
     "WebListenEnabled": false,
     "PollPeriodSeconds": 0.0
   }

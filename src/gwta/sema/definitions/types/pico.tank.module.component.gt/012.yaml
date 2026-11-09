@@ -23,8 +23,6 @@ properties:
   HwUid:
     type: string
 
-  Enabled:
-    type: boolean
 
   PicoHwUid:
     type: string
@@ -56,13 +54,21 @@ properties:
   SerialNumber:
     type: string
 
-  AsyncCaptureDeltaMicroVolts:
-    type: integer
-
   SensorOrder:
     type: array
     items:
       type: integer
+
+  PicoBoardVariant:
+    $ref: "https://schemas.electricity.works/enums/pico.board.variant/000"
+    description: >
+      The physical board this pico was provisioned on.
+
+  MicropythonVersion:
+    type: string
+    description: >
+      The MicroPython release this pico was provisioned with, as
+      `os.uname().release` reports it.
 
   TypeName:
     const: "pico.tank.module.component.gt"
@@ -73,14 +79,13 @@ properties:
 required:
   - ComponentId
   - DeviceType
-  - Enabled
   - TempCalcMethod
   - ThermistorBeta
   - SendMicroVolts
   - Samples
   - NumSampleAverages
   - SerialNumber
-  - AsyncCaptureDeltaMicroVolts
+  - PicoBoardVariant
   - TypeName
   - Version
 
@@ -91,14 +96,13 @@ examples:
     {
       "ComponentId": "b58df331-f649-4563-9e40-d3e500529679",
       "DeviceType": "GridworksTankModule3",
-      "Enabled": false,
       "TempCalcMethod": "SimpleBeta",
       "ThermistorBeta": 1,
       "SendMicroVolts": false,
       "Samples": 1,
       "NumSampleAverages": 1,
       "SerialNumber": "example",
-      "AsyncCaptureDeltaMicroVolts": 0,
+      "PicoBoardVariant": "PicoRaspberryWifi2040",
       "TypeName": "pico.tank.module.component.gt",
       "Version": "012",
       "PicoHwUid": "pico_a1b2c3"

@@ -22,8 +22,10 @@ local_names:
 
 initial_targets:
   types:
-    # The three mutating layout types (Sema is the source of truth; snapshot to
-    # gwta, hand-port to gwsproto, test via the round-trip script).
+    # The layout types (Sema is the source of truth; snapshot to gwta,
+    # hand-port to gwsproto, test via the round-trip script). Katahdin is the
+    # first simulated plant's layout.
+    gw.katahdin.layout: {}
     gw.nolan.layout: {}
     gw.house0.layout: {}
     gw1.simple.sim.layout: {}
@@ -42,7 +44,6 @@ initial_targets:
     pico.flow.module.component.gt: {}
     pico.tank.module.component.gt: {}
     sim.pico.tank.module.component.gt: {}
-    sim.relay.component.gt: {}
     sim.sensor.component.gt: {}
     spaceheat.node.gt: {}
     web.server.component.gt: {}

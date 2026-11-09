@@ -3,6 +3,7 @@
   "Version": "000",
   "ExpanderIdx": 1,
   "I2cBus": "DefaultBus",
+  "ExpanderType": "Pcf8575",
   "AllowedI2cAddressList": [
     32,
     33,

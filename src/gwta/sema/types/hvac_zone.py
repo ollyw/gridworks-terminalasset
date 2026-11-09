@@ -1,6 +1,7 @@
 from typing import Literal
 from pydantic import StrictFloat
 from gwta.sema.base import SemaType
+from gwta.sema.property_format import PositiveInt
 from gwta.sema.property_format import SpaceheatName
 
 
@@ -10,6 +11,6 @@ class HvacZone(SemaType):
     name: SpaceheatName
     critical: bool
     kwh_per_deg_f: StrictFloat
-    temp_channel_name: SpaceheatName | None = None
+    primary_circuit_position: PositiveInt
     type_name: Literal["gw1.hvac.zone"] = "gw1.hvac.zone"
     version: Literal["000"] = "000"

@@ -39,8 +39,6 @@ properties:
   HwUid:
     type: string
 
-  Enabled:
-    type: boolean
 
   SerialNumber:
     type: string
@@ -101,6 +99,17 @@ properties:
   CutoffFrequency:
     type: number
 
+  PicoBoardVariant:
+    $ref: "https://schemas.electricity.works/enums/pico.board.variant/000"
+    description: >
+      The physical board this pico was provisioned on.
+
+  MicropythonVersion:
+    type: string
+    description: >
+      The MicroPython release this pico was provisioned with, as
+      `os.uname().release` reports it.
+
   TypeName:
     const: "pico.flow.module.component.gt"
 
@@ -110,7 +119,6 @@ properties:
 required:
   - ComponentId
   - DeviceType
-  - Enabled
   - SerialNumber
   - FlowNodeName
   - FlowMeterType
@@ -122,6 +130,7 @@ required:
   - SendTickLists
   - NoFlowMs
   - AsyncCaptureThresholdGpmTimes100
+  - PicoBoardVariant
   - TypeName
   - Version
 
@@ -132,7 +141,6 @@ examples:
     {
       "ComponentId": "3702ecf7-32a5-4582-a073-13b8edc1154f",
       "DeviceType": "GridworksPicoFlowHall",
-      "Enabled": false,
       "SerialNumber": "example",
       "FlowNodeName": "scada",
       "FlowMeterType": "MakeModel",
@@ -144,6 +152,7 @@ examples:
       "SendTickLists": false,
       "NoFlowMs": 0,
       "AsyncCaptureThresholdGpmTimes100": 0,
+      "PicoBoardVariant": "PicoRaspberryWifi2040",
       "TypeName": "pico.flow.module.component.gt",
       "Version": "001"
     }

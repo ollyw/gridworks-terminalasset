@@ -1,6 +1,7 @@
 from typing import Literal
 from pydantic import ConfigDict, StrictInt, model_validator
 from gwta.sema.base import SemaType
+from gwta.sema.enums import PicoBoardVariant
 from gwta.sema.enums import TempCalcMethod
 from gwta.sema.property_format import PascalCase
 from gwta.sema.property_format import PositiveInt
@@ -14,7 +15,6 @@ class PicoTankModuleComponentGt(SemaType):
     device_type: PascalCase
     display_name: str | None = None
     hw_uid: str | None = None
-    enabled: bool
     pico_hw_uid: str | None = None
     pico_a_hw_uid: str | None = None
     pico_b_hw_uid: str | None = None
@@ -25,8 +25,9 @@ class PicoTankModuleComponentGt(SemaType):
     num_sample_averages: PositiveInt
     pico_k_ohms: PositiveInt | None = None
     serial_number: str
-    async_capture_delta_micro_volts: StrictInt
     sensor_order: list[StrictInt] | None = None
+    pico_board_variant: PicoBoardVariant
+    micropython_version: str | None = None
     type_name: Literal["pico.tank.module.component.gt"] = (
         "pico.tank.module.component.gt"
     )

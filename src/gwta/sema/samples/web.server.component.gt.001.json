@@ -4,7 +4,7 @@
   "ComponentId": "f7dca1af-d89d-463d-b3ab-a1c1a4fec75b",
   "DeviceType": "AbstractWebServer",
   "WebServer": {
-    "Enabled": false,
+    "Serve": false,
     "Host": "example",
     "Name": "example",
     "Port": 0,

@@ -5,25 +5,28 @@ title: "gw1.zone.call.circuit"
 type: object
 description: >
   One zone-call circuit: the chain from wall thermostat through call
-  wire and relay pair to an actuator, serving one zone. A zone may be
+  wire and relay pair to an emitter, serving one zone. A zone may be
   served by more than one circuit.
 
 properties:
   CircuitPosition:
     $ref: "https://schemas.electricity.works/formats/positive.int"
     description: >
-      The circuit's 1-based position in the relay board's zone bank.
+      The circuit's 1-based place in the layout's list of zone-call
+      circuits.
+
+  Name:
+    $ref: "https://schemas.electricity.works/formats/spaceheat.name"
+    description: >
+      The circuit's label (e.g. "living-rm-fancoil").
 
   ServesZone:
     $ref: "https://schemas.electricity.works/formats/spaceheat.name"
     description: >
       Name of the hvac zone this circuit serves.
 
-  ActuatorKind:
-    $ref: "https://schemas.electricity.works/enums/zone.actuator.kind/000"
-
-  Role:
-    $ref: "https://schemas.electricity.works/enums/zone.circuit.role/000"
+  EmitterType:
+    $ref: "https://schemas.electricity.works/enums/gw.zone.emitter.type/000"
 
   CanCool:
     type: boolean
@@ -40,6 +43,23 @@ properties:
     $ref: "https://schemas.electricity.works/formats/spaceheat.name"
     description: >
       Name of the channel sensing the thermostat call wire.
+
+  SetpointChannelName:
+    $ref: "https://schemas.electricity.works/formats/spaceheat.name"
+    description: >
+      Name of the channel carrying this circuit's thermostat setpoint.
+
+  TempChannelName:
+    $ref: "https://schemas.electricity.works/formats/spaceheat.name"
+    description: >
+      Name of the channel carrying the air temperature sensed at this
+      circuit's thermostat. The sensor is physically co-located with the
+      thermostat element that makes the heat call.
+
+  FloorTempChannelName:
+    $ref: "https://schemas.electricity.works/formats/spaceheat.name"
+    description: >
+      Name of the channel sensing the circuit's floor temperature.
 
   FailsafeRelayNode:
     $ref: "https://schemas.electricity.works/formats/spaceheat.name"
@@ -59,9 +79,9 @@ properties:
 
 required:
   - CircuitPosition
+  - Name
   - ServesZone
-  - ActuatorKind
-  - Role
+  - EmitterType
   - CanCool
   - SetpointSource
   - Thermostat
@@ -77,11 +97,16 @@ x-gridworks:
   owner: "gridworks-energy"
   axioms:
     - number: 1
-      name: "FloorLoopsCannotCool"
+      name: "OnlyFanCoilsCool"
       statement: >
-        If ActuatorKind is FloorLoop, CanCool SHALL be false.
+        If EmitterType is not FanCoil, CanCool SHALL be false.
     - number: 2
       name: "ReadSetpointNeedsCommsStat"
       statement: >
         If SetpointSource is FromThermostat, Thermostat.Kind SHALL NOT
         be MechanicalDial.
+    - number: 3
+      name: "SetpointNeedsTemp"
+      statement: >
+        If SetpointChannelName is present, TempChannelName SHALL be
+        present.
