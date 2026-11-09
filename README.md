@@ -44,5 +44,12 @@ Requires Python 3.12+ and [uv](https://docs.astral.sh/uv/).
 
 ```shell
 uv sync
-uv run pytest
+./ci.sh
 ```
+
+`ci.sh` is the gate: ruff, ruff format, pyright and the test suite,
+including the `live` tests, which need the dev RabbitMQ on
+`localhost:5672` (start it with gridworks-base's `arm.sh` or `x86.sh`).
+The GitHub workflow runs the same script against the same broker image,
+so a local pass is a CI pass. `uv run pytest` alone runs the offline
+tests.
