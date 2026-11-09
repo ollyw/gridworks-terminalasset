@@ -1,17 +1,18 @@
 import json
 
 import pytest
-from gwbase.config import GNodeSettings
 from gwbase.sema import GwBaseSemaCodec
+from gwbase.sema.enums import GwGNodeClass
 from gwbase.sema.types import GNodeGt
 
+from gwta.config import GwtaSettings
 from gwta.hello import HelloTerminalAsset, ensure_g_node_json, provision_topology
 
 
 @pytest.fixture
-def settings(tmp_path) -> GNodeSettings:
+def settings(tmp_path) -> GwtaSettings:
     path = ensure_g_node_json(tmp_path / "g.node.gt.json", alias="d1.test.ta")
-    return GNodeSettings(service_alias="d1.test.ta", g_node_path=path)
+    return GwtaSettings(service_alias="d1.test.ta", g_node_path=path)
 
 
 def test_g_node_json_is_sema_valid(tmp_path):
@@ -32,7 +33,7 @@ def test_ensure_is_idempotent(tmp_path):
 def test_hello_constructs_without_broker(settings):
     ta = HelloTerminalAsset(settings=settings)
     assert ta.alias == "d1.test.ta"
-    assert ta.g_node_class == "TerminalAsset"
+    assert ta.g_node_class == GwGNodeClass.TerminalAsset
 
 
 @pytest.mark.live

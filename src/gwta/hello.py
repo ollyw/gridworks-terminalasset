@@ -6,7 +6,7 @@ Run it with::
 
 Against the default broker URL (a local dev rabbit:
 ``amqp://smqPublic:smqPublic@localhost:5672/d1__1``) or wherever
-``GWBASE_RABBIT__URL`` points. The actor provisions the exchange topology,
+``GWTA_RABBIT__URL`` points. The actor provisions the exchange topology,
 connects, and broadcasts a ``heartbeat.a`` every ``--beat-seconds`` until
 interrupted. No physics — this actor exists to prove the comms plumbing.
 """
@@ -21,14 +21,16 @@ from pathlib import Path
 
 import pika
 from gwbase import topology
-from gwbase.config import GNodeSettings
 from gwbase.gridworks_actor import GridworksActor
+from gwbase.sema.enums import GwGNodeClass
 from gwbase.sema.types import HeartbeatA
-from gwbase.transport_encoding import RoutingEnvelope, TransportClass
+from gwbase.sema.types.gridworks_header import GridworksHeader
+from gwbase.transport_encoding import RoutingEnvelope
+
+from gwta.config import GwtaSettings
 
 LOGGER = logging.getLogger(__name__)
 
-DEFAULT_ALIAS = "d1.hello.ta"
 DEFAULT_BEAT_SECONDS = 10.0
 
 
@@ -87,22 +89,22 @@ class HelloTerminalAsset(GridworksActor):
     """The smallest terminal asset: GNode identity, a broker connection,
     and a broadcast ``heartbeat.a`` at a fixed cadence."""
 
-    def __init__(
-        self,
-        *,
-        settings: GNodeSettings,
-        my_super_alias: str = "d1.super1",
-        my_time_coordinator_alias: str = "d1.time",
-    ):
+    def __init__(self, *, settings: GwtaSettings):
         super().__init__(
             settings=settings,
-            transport_class=TransportClass.TerminalAsset,
-            my_super_alias=my_super_alias,
-            my_time_coordinator_alias=my_time_coordinator_alias,
+            g_node_class=GwGNodeClass.TerminalAsset,
+            my_super_alias=settings.super_alias,
+            my_time_coordinator_alias=settings.time_coordinator_alias,
         )
         self._hex_cycle = itertools.cycle("0123456789abcdef")
 
-    def process_message(self, *, envelope: RoutingEnvelope, body: bytes) -> None:
+    def process_message(
+        self,
+        *,
+        envelope: RoutingEnvelope,
+        body: bytes,  # noqa: ARG002 -- logged by type only
+        header: GridworksHeader | None,  # noqa: ARG002 -- the header is not read
+    ) -> None:
         LOGGER.info(
             "[%s] received %s from %s",
             self.alias,
@@ -149,7 +151,7 @@ def main() -> None:
     )
     logging.getLogger("pika").setLevel(logging.WARNING)
 
-    settings = GNodeSettings(service_alias=DEFAULT_ALIAS, service_name="terminalasset")
+    settings = GwtaSettings.load()
     ensure_g_node_json(settings.g_node_path, alias=settings.service_alias)
 
     if not args.no_provision:
