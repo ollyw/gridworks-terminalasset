@@ -144,6 +144,9 @@ class SimulatedPlant(GridworksActor):
                 actuation.relay_name,
             )
             return
+        LOGGER.info(
+            "[%s] heard %s %s", self.alias, actuation.relay_name, actuation.action.value
+        )
         with self.model_lock:
             self.model.actuate(actuation)
 
