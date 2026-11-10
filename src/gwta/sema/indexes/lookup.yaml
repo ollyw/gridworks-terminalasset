@@ -109,6 +109,11 @@ types:
     versioning_strategy: literal
     versions:
       '000': definitions/types/gw.house0.layout/000.yaml
+  gw.house0.no.sieg:
+    latest_version: '000'
+    versioning_strategy: literal
+    versions:
+      '000': definitions/types/gw.house0.no.sieg/000.yaml
   gw.hydronic:
     latest_version: '000'
     versioning_strategy: literal
@@ -364,6 +369,16 @@ types:
     versioning_strategy: literal
     versions:
       '001': definitions/types/sim.pico.tank.module.component.gt/001.yaml
+  sim.plant.actuation:
+    latest_version: '000'
+    versioning_strategy: literal
+    versions:
+      '000': definitions/types/sim.plant.actuation/000.yaml
+  sim.plant.flux:
+    latest_version: '000'
+    versioning_strategy: literal
+    versions:
+      '000': definitions/types/sim.plant.flux/000.yaml
   sim.sensor.component.gt:
     latest_version: '000'
     versioning_strategy: literal
@@ -390,6 +405,9 @@ enums:
     latest_version: '000'
     versions:
       '000': definitions/enums/base.g.node.class/000.yaml
+  change.relay.pin:
+    enum_type: literal
+    schema: definitions/enums/change.relay.pin/000.yaml
   change.relay.state:
     enum_type: literal
     schema: definitions/enums/change.relay.state/000.yaml
@@ -549,6 +567,7 @@ formats:
   positive.float: definitions/formats/positive.float.yaml
   positive.int: definitions/formats/positive.int.yaml
   spaceheat.name: definitions/formats/spaceheat.name.yaml
+  utc.iso8601.millis: definitions/formats/utc.iso8601.millis.yaml
   utc.milliseconds: definitions/formats/utc.milliseconds.yaml
   utc.seconds: definitions/formats/utc.seconds.yaml
   uuid4.str: definitions/formats/uuid4.str.yaml

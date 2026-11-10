@@ -1,5 +1,6 @@
 enums:
   base.g.node.class: base.g.node.class
+  change.relay.pin: change.relay.pin
   change.relay.state: change.relay.state
   g.node.status: g.node.status
   gpio.sense.mode: gpio.sense.mode
@@ -52,6 +53,7 @@ types:
   gw.circulator: circulator
   gw.element.backup: element.backup
   gw.house0.layout: house0.layout
+  gw.house0.no.sieg: house0.no.sieg
   gw.hydronic: hydronic
   gw.katahdin.layout: katahdin.layout
   gw.native.gpio.pin: native.gpio.pin
@@ -103,6 +105,8 @@ types:
   sim.pico.btu.meter.component.gt: sim.pico.btu.meter.component.gt
   sim.pico.flow.module.component.gt: sim.pico.flow.module.component.gt
   sim.pico.tank.module.component.gt: sim.pico.tank.module.component.gt
+  sim.plant.actuation: sim.plant.actuation
+  sim.plant.flux: sim.plant.flux
   sim.sensor.component.gt: sim.sensor.component.gt
   spaceheat.node.gt: spaceheat.node.gt
   spaceheat.telemetry.quantity.projection: spaceheat.telemetry.quantity.projection

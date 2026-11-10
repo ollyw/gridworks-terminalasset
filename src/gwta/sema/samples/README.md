@@ -5,13 +5,14 @@ an `examples:` block. Generated from the authored examples (never edited
 by hand) and consumed by `roundtrip.py`. A type version without a sample
 is silently untested by the round-trip, so its absence is recorded here.
 
-Coverage: **65 of 75** seeded type versions have a sample.
+Coverage: **67 of 78** seeded type versions have a sample.
 
 Seeded type versions lacking a sample (no `examples:`):
 
 - `ads111x.based.device.type.gt.000`
 - `electric.meter.device.type.gt.000`
 - `gw.house0.layout.000`
+- `gw.house0.no.sieg.000`
 - `gw.katahdin.layout.000`
 - `gw.native.gpio.pin.000`
 - `gw.nolan.layout.000`

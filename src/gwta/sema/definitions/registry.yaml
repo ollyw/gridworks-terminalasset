@@ -67,6 +67,13 @@ formats:
     status: "published"
     description: "Single-segment lowercase identifier with optional internal hyphen-separated words"
 
+  utc.iso8601.millis:
+    owner: gridworks-energy
+    schema_url: "https://schemas.electricity.works/formats/utc.iso8601.millis"
+    created: "2026-02-22T16:43:00Z"
+    status: "published"
+    description: "UTC timestamp in ISO 8601 format with exactly three digits of fractional seconds and Z suffix"
+
   utc.milliseconds:
     owner: gridworks-energy
     schema_url: "https://schemas.electricity.works/formats/utc.milliseconds"
@@ -100,6 +107,14 @@ enums:
         schema_url: "https://schemas.electricity.works/enums/base.g.node.class/000"
         created: "2026-02-22T16:43:00Z"
         status: "published"
+
+  change.relay.pin:
+    owner: gridworks-energy
+    enum_type: "literal"
+    description: "FSM events for actuating a single relay pin: energize or de-energize (the i2c relay multiplexer's atomic action)."
+    schema_url: "https://schemas.electricity.works/enums/change.relay.pin/000"
+    created: "2026-06-12T00:00:00Z"
+    status: "published"
 
   change.relay.state:
     owner: gridworks-energy
@@ -839,6 +854,60 @@ types:
         created: "2026-11-01T15:50:00Z"
         status: "staging"
         summary: "The complete deployable artifact for a House0-fleet home: every collection and Hydronic required. The word MEANS has-a-siegenthaler-loop (beech, maple); sieg-less homes are gw.house0.no.sieg. Components: eGauge, ADS111x thermistor snaps, the House0 board record (Krida expanders and GP8403 DACs) with per-relay and per-output components, pico flow and BTU meters, tank modules real and sim, Hubitat with poller, web-server, all over the DeviceType record model. The axioms carry the layout invariants; wording is identical across layout words where the axiom name is shared. The cold-override command node is required; the backup command node exists if and only if Hydronic.Backup is present, and the relays a backup names are Relay ShNodes (axiom BackupRelays). Axiom CirculatorRunningChannels: every circulator in Hydronic.Circulators has its running channel on the circulator-running strategy reading its declared power or CT input."
+        direct_dependencies:
+          structural:
+            - "ads111x.based.component.gt:000"
+            - "ads111x.based.device.type.gt:000"
+            - "data.channel.gt:004"
+            - "derived.channel.gt:003"
+            - "device.component.gt:000"
+            - "electric.meter.component.gt:001"
+            - "electric.meter.device.type.gt:000"
+            - "g.node.gt:006"
+            - "gpio.relay.component.gt:000"
+            - "gpio.sensor.component.gt:000"
+            - "gw.hydronic:000"
+            - "gw1.scada.device.type.gt:000"
+            - "hp.device.type.gt:000"
+            - "hubitat.component.gt:000"
+            - "hubitat.poller.component.gt:000"
+            - "i2c.dac.output.component.gt:000"
+            - "i2c.relay.component.gt:000"
+            - "i2c.thermistor.reader.component.gt:000"
+            - "pico.btu.meter.component.gt:000"
+            - "pico.flow.module.component.gt:001"
+            - "pico.tank.module.component.gt:012"
+            - "scada.board.component.gt:000"
+            - "sim.pico.btu.meter.component.gt:000"
+            - "sim.pico.flow.module.component.gt:000"
+            - "sim.pico.tank.module.component.gt:001"
+            - "sim.sensor.component.gt:000"
+            - "spaceheat.name"
+            - "spaceheat.node.gt:303"
+            - "web.server.component.gt:001"
+          axiom:
+            - "gw.boiler.backup:000"
+            - "gw.element.backup:000"
+            - "gw.zone.emitter.type:000"
+            - "gw0.required.energy.layered:000"
+            - "gw0.usable.energy.layered:000"
+            - "gw1.actor.class:014"
+            - "gw1.quantity:003"
+            - "gw2.lc.top.state:000"
+            - "zone.setpoint.source:000"
+
+  gw.house0.no.sieg:
+    latest_version: "000"
+    owner: gridworks-energy
+    versioning_strategy: "literal"
+    description: "House0-fleet (gw108-era hand-built) hydronic layout schema for a home with no Siegenthaler loop."
+
+    versions:
+      "000":
+        schema_url: "https://schemas.electricity.works/types/gw.house0.no.sieg/000"
+        created: "2026-11-01T15:50:00Z"
+        status: "staging"
+        summary: "The complete deployable artifact for a House0-fleet home with no Siegenthaler loop (elm, fir, oak): every collection and Hydronic required. Homes with a loop are gw.house0.layout. No sieg-loop command node, sieg channels or sieg relays are required; PrimaryFlowSource is Measured. RequiredActuators names secondary-pump-relay and secondary-pump-hack-relay, both of which hp-boss owns beside the call relay (a plant with a heat exchanger between the heat pump and the house has a secondary pump; the hack relay is the one whose contacts the pump feed still passes through, energized with the pump until it is wired out). Components: eGauge, ADS111x thermistor snaps, the House0 board record (Krida expanders and GP8403 DACs) with per-relay and per-output components, pico flow and BTU meters, tank modules real and sim, Hubitat with poller, web-server, all over the DeviceType record model. The axioms carry the layout invariants; wording is identical across layout words where the axiom name is shared. The cold-override command node is required; the backup command node exists if and only if Hydronic.Backup is present, and the relays a backup names are Relay ShNodes (axiom BackupRelays). Axiom 39 HpWatchNode: an hp-watch node, whose sensed running state hp-boss runs the secondary pump from. Axiom 38 CirculatorRunningChannels replaces the secondary-pump special case: every circulator in Hydronic.Circulators has its running channel on the circulator-running strategy reading its declared power or CT input."
         direct_dependencies:
           structural:
             - "ads111x.based.component.gt:000"
@@ -1916,6 +1985,43 @@ types:
             - "positive.int"
             - "temp.calc.method:000"
             - "uuid4.str"
+
+  sim.plant.actuation:
+    latest_version: "000"
+    owner: gridworks-energy
+    versioning_strategy: "literal"
+    description: "The energize/de-energize of a single simulated relay, sent to the plant so it folds the actuation into its physics; the inverse boundary of sim.plant.flux, with a simulated state time and a human-readable wall-clock time."
+
+    versions:
+      "000":
+        schema_url: "https://schemas.electricity.works/types/sim.plant.actuation/000"
+        created: "2026-06-12T00:00:00Z"
+        status: "staging"
+        summary: "Initial Sema version"
+        direct_dependencies:
+          structural:
+            - "change.relay.pin:000"
+            - "spaceheat.name"
+            - "utc.iso8601.millis"
+            - "utc.milliseconds"
+
+  sim.plant.flux:
+    latest_version: "000"
+    owner: gridworks-energy
+    versioning_strategy: "literal"
+    description: "A simulated plant's native source emission of its physical state: parallel channel and value lists at one simulated read time plus the wall-clock emission time; a simulation-boundary shadow of synced.readings."
+
+    versions:
+      "000":
+        schema_url: "https://schemas.electricity.works/types/sim.plant.flux/000"
+        created: "2026-06-12T00:00:00Z"
+        status: "staging"
+        summary: "Initial Sema version"
+        direct_dependencies:
+          structural:
+            - "spaceheat.name"
+            - "utc.iso8601.millis"
+            - "utc.milliseconds"
 
   sim.sensor.component.gt:
     latest_version: "000"

@@ -1,7 +1,8 @@
 # sema_seed_request.yaml
 #
 # Seed request for the gridworks-terminalasset (gwta) Sema snapshot — the
-# hardware-layout vocabulary the scada emits and gwta decodes. Reconstructed
+# hardware-layout vocabulary gwta decodes and the plant words a simulated
+# plant speaks on the broker. Reconstructed
 # from the snapshot's recorded indexes/seed_expanded.yaml (the original request
 # was never checked in). Regenerate the vendored snapshot with:
 #
@@ -28,7 +29,12 @@ initial_targets:
     gw.katahdin.layout: {}
     gw.nolan.layout: {}
     gw.house0.layout: {}
+    gw.house0.no.sieg: {}
     gw1.simple.sim.layout: {}
+
+    # What a simulated plant emits, and the relay actuations it hears.
+    sim.plant.flux: {}
+    sim.plant.actuation: {}
 
     ads111x.based.component.gt: {}
     dfr.component.gt: {}

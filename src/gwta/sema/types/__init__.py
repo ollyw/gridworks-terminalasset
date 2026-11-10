@@ -22,6 +22,7 @@ from gwta.sema.types.gw0_usable_energy_layered import Gw0UsableEnergyLayered
 from gwta.sema.types.gw108_gpio_sensor_component_gt import Gw108GpioSensorComponentGt
 from gwta.sema.types.gw108_vdc_relay_component_gt import Gw108VdcRelayComponentGt
 from gwta.sema.types.house0_layout import House0Layout
+from gwta.sema.types.house0_no_sieg import House0NoSieg
 from gwta.sema.types.hp_control_box_device_type_gt import HpControlBoxDeviceTypeGt
 from gwta.sema.types.hp_device_type_gt import HpDeviceTypeGt
 from gwta.sema.types.hubitat_component_gt import HubitatComponentGt
@@ -74,6 +75,8 @@ from gwta.sema.types.sim_pico_flow_module_component_gt import (
 from gwta.sema.types.sim_pico_tank_module_component_gt import (
     SimPicoTankModuleComponentGt,
 )
+from gwta.sema.types.sim_plant_actuation import SimPlantActuation
+from gwta.sema.types.sim_plant_flux import SimPlantFlux
 from gwta.sema.types.sim_sensor_component_gt import SimSensorComponentGt
 from gwta.sema.types.simple_sim_layout import SimpleSimLayout
 from gwta.sema.types.spaceheat_node_gt import SpaceheatNodeGt
@@ -111,6 +114,7 @@ __all__ = [
     "Gw108GpioSensorComponentGt",
     "Gw108VdcRelayComponentGt",
     "House0Layout",
+    "House0NoSieg",
     "HpControlBoxDeviceTypeGt",
     "HpDeviceTypeGt",
     "HubitatComponentGt",
@@ -153,6 +157,8 @@ __all__ = [
     "SimPicoBtuMeterComponentGt",
     "SimPicoFlowModuleComponentGt",
     "SimPicoTankModuleComponentGt",
+    "SimPlantActuation",
+    "SimPlantFlux",
     "SimSensorComponentGt",
     "SimpleSimLayout",
     "SpaceheatNodeGt",

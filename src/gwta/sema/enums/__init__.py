@@ -1,5 +1,6 @@
 from gwta.sema.enums.actor_class import ActorClass
 from gwta.sema.enums.base_g_node_class import BaseGNodeClass
+from gwta.sema.enums.change_relay_pin import ChangeRelayPin
 from gwta.sema.enums.change_relay_state import ChangeRelayState
 from gwta.sema.enums.circulator_role import CirculatorRole
 from gwta.sema.enums.emission_method import EmissionMethod
@@ -34,6 +35,7 @@ from gwta.sema.enums.zone_setpoint_source import ZoneSetpointSource
 __all__ = [
     "ActorClass",
     "BaseGNodeClass",
+    "ChangeRelayPin",
     "ChangeRelayState",
     "CirculatorRole",
     "EmissionMethod",

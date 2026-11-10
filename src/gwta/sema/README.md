@@ -40,6 +40,7 @@ Staging words in this snapshot:
 - type gw.circulator:000
 - type gw.element.backup:000
 - type gw.house0.layout:000
+- type gw.house0.no.sieg:000
 - type gw.hydronic:000
 - type gw.katahdin.layout:000
 - type gw.native.gpio.pin:000
@@ -80,6 +81,8 @@ Staging words in this snapshot:
 - type sim.pico.btu.meter.component.gt:000
 - type sim.pico.flow.module.component.gt:000
 - type sim.pico.tank.module.component.gt:001
+- type sim.plant.actuation:000
+- type sim.plant.flux:000
 - type sim.sensor.component.gt:000
 - type web.server.component.gt:001
 

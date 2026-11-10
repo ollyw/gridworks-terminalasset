@@ -1,12 +1,15 @@
 metadata:
   generated_from: indexes/public_registry.yaml
-  generated_at: '2026-11-09T02:03:28Z'
+  generated_at: '2026-11-10T10:57:15Z'
   note: Transitive closure of initial_targets
 initial_targets:
 - gw.katahdin.layout:000
 - gw.nolan.layout:000
 - gw.house0.layout:000
+- gw.house0.no.sieg:000
 - gw1.simple.sim.layout:000
+- sim.plant.flux:000
+- sim.plant.actuation:000
 - ads111x.based.component.gt:000
 - dfr.component.gt:000
 - electric.meter.component.gt:001
@@ -54,6 +57,8 @@ worklist:
       path: definitions/formats/positive.int.yaml
     spaceheat.name:
       path: definitions/formats/spaceheat.name.yaml
+    utc.iso8601.millis:
+      path: definitions/formats/utc.iso8601.millis.yaml
     utc.milliseconds:
       path: definitions/formats/utc.milliseconds.yaml
     utc.seconds:
@@ -64,6 +69,9 @@ worklist:
     base.g.node.class:
       '000':
         path: definitions/enums/base.g.node.class/000.yaml
+    change.relay.pin:
+      '000':
+        path: definitions/enums/change.relay.pin/000.yaml
     change.relay.state:
       '000':
         path: definitions/enums/change.relay.state/000.yaml
@@ -218,6 +226,9 @@ worklist:
     gw.house0.layout:
       '000':
         path: definitions/types/gw.house0.layout/000.yaml
+    gw.house0.no.sieg:
+      '000':
+        path: definitions/types/gw.house0.no.sieg/000.yaml
     gw.hydronic:
       '000':
         path: definitions/types/gw.hydronic/000.yaml
@@ -371,6 +382,12 @@ worklist:
     sim.pico.tank.module.component.gt:
       '001':
         path: definitions/types/sim.pico.tank.module.component.gt/001.yaml
+    sim.plant.actuation:
+      '000':
+        path: definitions/types/sim.plant.actuation/000.yaml
+    sim.plant.flux:
+      '000':
+        path: definitions/types/sim.plant.flux/000.yaml
     sim.sensor.component.gt:
       '000':
         path: definitions/types/sim.sensor.component.gt/000.yaml
