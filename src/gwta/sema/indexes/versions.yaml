@@ -668,6 +668,12 @@ enums:
           - "Irradiance"
           - "Currency"
 
+  gw1.sim.device.type:
+    enum_type: "versioned"
+    note: "This enum is versioned; new versions are additive only."
+    versions:
+      "000": {}
+
   gw1.unit:
     enum_type: "versioned"
     note: "This enum is versioned; new versions are additive only."

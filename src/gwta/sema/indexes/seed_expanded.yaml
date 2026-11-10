@@ -1,6 +1,6 @@
 metadata:
   generated_from: indexes/public_registry.yaml
-  generated_at: '2026-11-10T10:57:15Z'
+  generated_at: '2026-11-10T11:11:01Z'
   note: Transitive closure of initial_targets
 initial_targets:
 - gw.katahdin.layout:000
@@ -37,6 +37,7 @@ initial_targets:
 - i2c.read.reg:000
 - i2c.write.reg:000
 - i2c.result:001
+- gw1.sim.device.type:000
 worklist:
   formats:
     handle.name:
@@ -108,6 +109,9 @@ worklist:
     gw1.quantity:
       '003':
         path: definitions/enums/gw1.quantity/003.yaml
+    gw1.sim.device.type:
+      '000':
+        path: definitions/enums/gw1.sim.device.type/000.yaml
     gw1.unit:
       '003':
         path: definitions/enums/gw1.unit/003.yaml

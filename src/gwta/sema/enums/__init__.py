@@ -23,6 +23,7 @@ from gwta.sema.enums.quantity import Quantity
 from gwta.sema.enums.refrigerant_cycle import RefrigerantCycle
 from gwta.sema.enums.relay_closed_or_open import RelayClosedOrOpen
 from gwta.sema.enums.relay_wiring_config import RelayWiringConfig
+from gwta.sema.enums.sim_device_type import SimDeviceType
 from gwta.sema.enums.spaceheat_unit import SpaceheatUnit
 from gwta.sema.enums.telemetry_name import TelemetryName
 from gwta.sema.enums.temp_calc_method import TempCalcMethod
@@ -58,6 +59,7 @@ __all__ = [
     "RefrigerantCycle",
     "RelayClosedOrOpen",
     "RelayWiringConfig",
+    "SimDeviceType",
     "SpaceheatUnit",
     "TelemetryName",
     "TempCalcMethod",

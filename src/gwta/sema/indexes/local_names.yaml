@@ -13,6 +13,7 @@ enums:
   gw1.actor.class: actor.class
   gw1.emission.method: emission.method
   gw1.quantity: quantity
+  gw1.sim.device.type: sim.device.type
   gw1.unit: unit
   gw2.lc.top.state: gw2.lc.top.state
   hz.calc.method: hz.calc.method

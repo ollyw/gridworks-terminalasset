@@ -11,6 +11,7 @@ dependencies = [
 
 [project.scripts]
 ta-hello = "gwta.hello:main"
+ta-plant = "gwta.plant:main"
 
 [dependency-groups]
 dev = [

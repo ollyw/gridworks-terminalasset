@@ -13,6 +13,7 @@ Staging words in this snapshot:
 - enum gw.primary.pump.owner:000
 - enum gw.refrigerant.cycle:000
 - enum gw.zone.emitter.type:000
+- enum gw1.sim.device.type:000
 - enum i2c.adc.channel
 - enum i2c.adc.type:000
 - enum i2c.dac.channel:000

@@ -33,10 +33,36 @@ working rules.
 
 ## Status
 
-Early. The project scaffold (uv, gridworks-base dependency, a hello-world
-actor that connects to a dev RabbitMQ broker and emits a heartbeat) is the
-current work. Physics modeling beyond synthetic constant/sawtooth channels is
-deliberately out of scope for now.
+Early. Two actors run against a dev RabbitMQ broker: `ta-hello`, which
+connects and emits a heartbeat, and `ta-plant`, a simulated plant with no
+physics yet.
+
+## The simulated plant
+
+```shell
+GWTA_SERVICE_ALIAS=<the layout's TerminalAsset alias> \
+  uv run ta-plant --layout <hardware-layout.json>
+```
+
+The plant reads one house's hardware layout (a `gw.house0.no.sieg`) and
+speaks two words, both wrapped in a `gw` envelope on `amq.topic`:
+
+- `sim.plant.flux`, every `--flux-seconds`: a value for each enabled channel
+  that a simulated sensing device captures, in the channel's own encoding.
+  Routing key `gw.<plant>.to.<scada>.sim-plant-flux`, aliases with their
+  dots as hyphens.
+- `sim.plant.actuation`, taken from
+  `gw.<scada>.to.<plant>.sim-plant-actuation`: a relay's node name and
+  whether it was energised or de-energised.
+
+Channel names and relay node names are all that cross the broker. A relay's
+state and an output's level are never in the flux.
+
+The plant's inside is a `PlantModel` (`src/gwta/plant_model.py`): time and
+actuations in, channel values out, with no knowledge of the broker. Today
+that is `DriftModel`, a seeded random walk per channel inside bounds set by
+the channel's telemetry, which keeps the actuations it hears and does not
+act on them.
 
 ## Development
 

@@ -67,3 +67,8 @@ initial_targets:
     i2c.read.reg: {}
     i2c.write.reg: {}
     i2c.result: {}
+
+  enums:
+    # A component whose DeviceType is one of these is simulated: what its
+    # channels read comes from the plant.
+    gw1.sim.device.type: {}

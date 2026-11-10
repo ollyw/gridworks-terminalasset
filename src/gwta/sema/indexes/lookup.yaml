@@ -466,6 +466,11 @@ enums:
     latest_version: '003'
     versions:
       '003': definitions/enums/gw1.quantity/003.yaml
+  gw1.sim.device.type:
+    enum_type: versioned
+    latest_version: '000'
+    versions:
+      '000': definitions/enums/gw1.sim.device.type/000.yaml
   gw1.unit:
     enum_type: versioned
     latest_version: '003'
