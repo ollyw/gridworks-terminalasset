@@ -103,6 +103,12 @@ channel of a Katahdin layout reads and which FMU input each relay drives;
 `src/gwta/sensing.py` gives a tank module's thermistor voltage and a flow
 meter's pulse rate for the channels that carry those.
 
+`modelica/KatahdinComponents.mo` models the same plant as connected
+components (pipes, valves, pumps, tanks, the exchanger, the heat pump, the
+zoned house) with icons and a placed diagram, for a Modelica tool such as
+OMEdit or Dymola. `KatahdinComponents.Plant` has the inputs, outputs and
+parameters of `Katahdin.Plant`. The FMU is built from `Katahdin.mo`.
+
 A relay acts through its contact. `katahdin.py` holds what a closed contact
 does (it feeds a valve's motor, runs the secondary pump, calls the heat
 pump), and the layout's `relay.control.config` says which of the relay's two
