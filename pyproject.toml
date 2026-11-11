@@ -6,12 +6,14 @@ readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.12,<3.14"
 dependencies = [
+    "fmpy>=0.3.22",
     "gridworks-base>=0.7.3",
 ]
 
 [project.scripts]
 ta-hello = "gwta.hello:main"
 ta-plant = "gwta.plant:main"
+ta-katahdin-layout = "gwta.katahdin_layout:main"
 
 [dependency-groups]
 dev = [
@@ -24,8 +26,9 @@ dev = [
 [tool.pytest.ini_options]
 markers = [
     "live: needs a reachable rabbit broker (run with `pytest -m live`)",
+    "fmu: needs build/KatahdinPlant.fmu from scripts/build_fmu.sh (run with `pytest -m fmu`)",
 ]
-addopts = "-m 'not live'"
+addopts = "-m 'not live and not fmu'"
 
 [tool.pyright]
 include = ["src", "tests"]

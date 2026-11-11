@@ -11,6 +11,12 @@ grammar on ``amq.topic``, where MQTT peers meet AMQP ones. Channel names
 and relay node names are all that cross: what a relay does, the plant
 works out from the layout.
 
+With no more than a layout the values drift at random. With ``--fmu`` they
+are the physics of a Katahdin house, run from the FMU that
+``scripts/build_fmu.sh`` generates::
+
+    uv run ta-plant --layout <katahdin-layout.json> --fmu build/KatahdinPlant.fmu
+
 ``GWTA_SERVICE_ALIAS`` must be the alias of the layout's TerminalAsset
 GNode, whose ``g.node.gt`` the plant writes to ``GWTA_G_NODE_PATH`` when
 that file is absent.
@@ -30,9 +36,11 @@ from gwbase.sema.enums import GwGNodeClass
 from gwbase.sema.types.gridworks_header import GridworksHeader
 from gwbase.transport_encoding import RoutingEnvelope, WrappedRoutingEnvelope
 from gwbase.wrapped import wrap_bytes
+from pydantic import TypeAdapter
 
 from gwta.config import GwtaSettings
 from gwta.hello import provision_topology, wait_for_consuming
+from gwta.katahdin import katahdin_model
 from gwta.plant_layout import PlantLayout, load_plant_layout
 from gwta.plant_model import DriftModel, PlantModel
 from gwta.sema.base import SemaError
@@ -44,6 +52,8 @@ LOGGER = logging.getLogger(__name__)
 
 DEFAULT_FLUX_SECONDS = 5.0
 DEFAULT_SEED = 0
+
+OVERRIDES = TypeAdapter(dict[str, float])
 
 FLUX_TYPE_NAME = "sim.plant.flux"
 ACTUATION_TYPE_NAME = "sim.plant.actuation"
@@ -196,11 +206,24 @@ def main() -> None:
         help=f"seed of the drift (default {DEFAULT_SEED})",
     )
     parser.add_argument(
+        "--fmu",
+        type=Path,
+        help="the Katahdin plant's FMU; without it the values drift at random",
+    )
+    parser.add_argument(
+        "--fmu-overrides",
+        type=Path,
+        help="a JSON object of FMU parameter and input values that replace "
+        "the FMU's own",
+    )
+    parser.add_argument(
         "--no-provision",
         action="store_true",
         help="skip declaring the exchange topology (it already exists)",
     )
     args = parser.parse_args()
+    if args.fmu_overrides is not None and args.fmu is None:
+        parser.error("--fmu-overrides needs --fmu")
 
     logging.basicConfig(
         level=logging.INFO,
@@ -215,10 +238,22 @@ def main() -> None:
     if not args.no_provision:
         provision_topology(settings.rabbit.url.get_secret_value())
 
+    model: PlantModel
+    if args.fmu is None:
+        model = DriftModel(layout.telemetry_by_channel, seed=args.seed)
+    else:
+        overrides = (
+            {}
+            if args.fmu_overrides is None
+            else OVERRIDES.validate_json(args.fmu_overrides.read_bytes())
+        )
+        model = katahdin_model(
+            fmu_path=args.fmu, layout=layout, overrides=overrides, start_ms=wall_ms()
+        )
     plant = SimulatedPlant(
         settings=settings,
         layout=layout,
-        model=DriftModel(layout.telemetry_by_channel, seed=args.seed),
+        model=model,
         now_ms=wall_ms,
     )
     plant.start()
@@ -238,6 +273,7 @@ def main() -> None:
         LOGGER.info("[%s] interrupted; stopping", plant.alias)
     finally:
         plant.stop()
+        model.close()
 
 
 if __name__ == "__main__":

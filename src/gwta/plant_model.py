@@ -22,6 +22,10 @@ class PlantModel(ABC):
     def actuate(self, actuation: SimPlantActuation) -> None:
         """Take one relay actuation."""
 
+    def close(self) -> None:
+        """Release what the model holds outside Python: nothing, unless a
+        model says otherwise."""
+
 
 class Drift(NamedTuple):
     """The random walk of one kind of channel, in that telemetry's encoding:

@@ -11,7 +11,13 @@ from gwta.plant_layout import load_plant_layout, plant_layout
 from gwta.plant_model import DriftModel
 from gwta.sema.codec import SemaCodec
 from gwta.sema.enums import TelemetryName
-from gwta.sema.types import House0NoSieg
+from gwta.sema.types import (
+    ElectricMeterComponentGt,
+    House0NoSieg,
+    SimPicoBtuMeterComponentGt,
+    SimPicoTankModuleComponentGt,
+    SimSensorComponentGt,
+)
 
 CONFIG = Path(__file__).parent / "config"
 LAYOUT_PATH = CONFIG / "gw.house0.no.sieg.hazel.layout.json"
@@ -47,6 +53,29 @@ def test_the_plant_shows_what_simulated_sensing_devices_capture() -> None:
     assert len(shown) == 35
     assert shown["hp-odu-pwr"] == TelemetryName.PowerW
     assert shown["secondary-flow"] == TelemetryName.GpmTimes100
+
+
+def test_every_relay_comes_with_what_its_two_positions_are() -> None:
+    layout = load_plant_layout(LAYOUT_PATH)
+    assert set(layout.config_by_relay) == layout.relay_names
+    call = layout.config_by_relay["hp-scada-ops-relay"]
+    assert (call.de_energized_state, call.energized_state) == (
+        "RelayClosed",
+        "RelayOpen",
+    )
+
+
+def test_every_channel_the_plant_shows_comes_with_the_device_that_senses_it() -> None:
+    layout = load_plant_layout(LAYOUT_PATH)
+    sensors = layout.sensor_by_channel
+    assert set(sensors) == set(layout.telemetry_by_channel)
+    assert isinstance(sensors["hp-odu-pwr"], ElectricMeterComponentGt)
+    assert isinstance(sensors["secondary-flow"], SimPicoBtuMeterComponentGt)
+    assert isinstance(sensors["dist-flow-hz"], SimSensorComponentGt)
+    tank = sensors["tank1-depth2-micro-v"]
+    assert isinstance(tank, SimPicoTankModuleComponentGt)
+    assert tank.thermistor_beta == 3977
+    assert sensors["tank1-depth2-device"] is tank
 
 
 def test_relay_states_and_output_levels_are_not_the_plants_to_show() -> None:
@@ -90,7 +119,8 @@ def test_a_file_that_is_another_word_is_refused(tmp_path: Path) -> None:
     path.write_text(json.dumps(raw_layout()["GNodes"][0]))
     with pytest.raises(
         ValueError,
-        match="holds a GNodeGt, and a plant reads a House0Layout or a House0NoSieg",
+        match="holds a GNodeGt, and a plant reads a House0Layout or a House0NoSieg "
+        "or a KatahdinLayout",
     ):
         load_plant_layout(path)
 

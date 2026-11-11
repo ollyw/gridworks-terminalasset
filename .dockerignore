@@ -1,0 +1,8 @@
+*
+!modelica/
+!src/
+!pyproject.toml
+!uv.lock
+!README.md
+!LICENSE
+**/__pycache__/

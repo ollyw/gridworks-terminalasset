@@ -1,0 +1,8 @@
+// Builds KatahdinPlant.fmu in the working directory from Katahdin.mo beside it:
+// a co-simulation FMU for FMI 2.0 that carries its own CVODE solver, so the
+// accuracy of a step does not depend on how long the caller makes it.
+setCommandLineOptions("--fmiFlags=s:cvode");
+loadFile("Katahdin.mo");
+getErrorString();
+buildModelFMU(Katahdin.Plant, version = "2.0", fmuType = "cs", fileNamePrefix = "KatahdinPlant");
+getErrorString();
