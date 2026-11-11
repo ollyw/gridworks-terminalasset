@@ -12,12 +12,18 @@ from gwta.sema.property_format import LeftRightDot, SpaceheatName
 from gwta.sema.types import (
     ElectricMeterComponentGt,
     GNodeGt,
+    House0Layout,
     House0NoSieg,
     SimPicoBtuMeterComponentGt,
     SimPicoFlowModuleComponentGt,
     SimPicoTankModuleComponentGt,
     SimSensorComponentGt,
 )
+
+# The layout words a plant reads: one House0 house, with a Siegenthaler loop
+# or without.
+House0 = House0Layout | House0NoSieg
+HOUSE0_WORDS = (House0Layout, House0NoSieg)
 
 SENSING_COMPONENTS = (
     ElectricMeterComponentGt,
@@ -39,7 +45,7 @@ class PlantLayout(NamedTuple):
     relay_names: frozenset[SpaceheatName]
 
 
-def g_node_of_class(layout: House0NoSieg, g_node_class: GwGNodeClass) -> GNodeGt:
+def g_node_of_class(layout: House0, g_node_class: GwGNodeClass) -> GNodeGt:
     found = [g for g in layout.g_nodes if g.g_node_class == g_node_class.value]
     if len(found) != 1:
         raise ValueError(
@@ -48,7 +54,7 @@ def g_node_of_class(layout: House0NoSieg, g_node_class: GwGNodeClass) -> GNodeGt
     return found[0]
 
 
-def plant_layout(layout: House0NoSieg) -> PlantLayout:
+def plant_layout(layout: House0) -> PlantLayout:
     """A channel is the plant's to show when the component of the node that
     captures it is a sensing device of a simulated type. A relay's state
     and an output's level are the scada's own and stay out. The layout
@@ -80,6 +86,10 @@ def plant_layout(layout: House0NoSieg) -> PlantLayout:
 
 
 def load_plant_layout(path: Path) -> PlantLayout:
-    return plant_layout(
-        SemaCodec().from_dict(json.loads(path.read_text()), expect=House0NoSieg)
-    )
+    decoded = SemaCodec().from_dict(json.loads(path.read_text()))
+    if not isinstance(decoded, HOUSE0_WORDS):
+        raise ValueError(
+            f"{path} holds a {type(decoded).__name__}, and a plant reads a "
+            f"{' or a '.join(word.__name__ for word in HOUSE0_WORDS)}"
+        )
+    return plant_layout(decoded)

@@ -1,5 +1,6 @@
-"""The plant's reading of a layout. The fixture is gridworks-scada's
-no-sieg House0 test layout (its tests/config), byte for byte."""
+"""The plant's reading of a layout. The fixtures are gridworks-scada's
+House0 test layouts (its tests/config), byte for byte: hazel with no
+Siegenthaler loop, orange with one."""
 
 import json
 from pathlib import Path
@@ -7,11 +8,15 @@ from pathlib import Path
 import pytest
 
 from gwta.plant_layout import load_plant_layout, plant_layout
+from gwta.plant_model import DriftModel
 from gwta.sema.codec import SemaCodec
 from gwta.sema.enums import TelemetryName
 from gwta.sema.types import House0NoSieg
 
-LAYOUT_PATH = Path(__file__).parent / "config" / "gw.house0.no.sieg.hazel.layout.json"
+CONFIG = Path(__file__).parent / "config"
+LAYOUT_PATH = CONFIG / "gw.house0.no.sieg.hazel.layout.json"
+SIEG_LAYOUT_PATH = CONFIG / "gw.house0.orange.layout.json"
+SENSING_ACTORS = {"PowerMeter", "SimSensorActor", "ApiTankModule", "ApiBtuMeter"}
 
 
 def raw_layout() -> dict:
@@ -35,8 +40,7 @@ def test_the_plant_shows_what_simulated_sensing_devices_capture() -> None:
     expected = {
         ch["Name"]
         for ch in raw["DataChannels"]
-        if capturers[ch["CapturedByNodeName"]]
-        in {"PowerMeter", "SimSensorActor", "ApiTankModule", "ApiBtuMeter"}
+        if capturers[ch["CapturedByNodeName"]] in SENSING_ACTORS
     }
     shown = load_plant_layout(LAYOUT_PATH).telemetry_by_channel
     assert set(shown) == expected
@@ -84,5 +88,34 @@ def test_disabled_channels_are_left_out() -> None:
 def test_a_file_that_is_another_word_is_refused(tmp_path: Path) -> None:
     path = tmp_path / "layout.json"
     path.write_text(json.dumps(raw_layout()["GNodes"][0]))
-    with pytest.raises(ValueError, match="decoded GNodeGt, expected House0NoSieg"):
+    with pytest.raises(
+        ValueError,
+        match="holds a GNodeGt, and a plant reads a House0Layout or a House0NoSieg",
+    ):
         load_plant_layout(path)
+
+
+def test_a_house_with_a_sieg_loop_is_read_the_same_way() -> None:
+    raw = json.loads(SIEG_LAYOUT_PATH.read_text())
+    assert raw["TypeName"] == "gw.house0.layout"
+    capturers = {n["Name"]: n["ActorClass"] for n in raw["ShNodes"]}
+    layout = load_plant_layout(SIEG_LAYOUT_PATH)
+
+    assert layout.g_node.alias == "d1.isone.ct.newhaven.orange1.ta"
+    assert layout.scada_alias == "d1.isone.ct.newhaven.orange1.scada"
+    assert set(layout.telemetry_by_channel) == {
+        ch["Name"]
+        for ch in raw["DataChannels"]
+        if capturers[ch["CapturedByNodeName"]] in SENSING_ACTORS
+    }
+    assert len(layout.telemetry_by_channel) == 36
+    assert layout.relay_names == {
+        n["Name"] for n in raw["ShNodes"] if n["ActorClass"] == "Relay"
+    }
+    assert {"hp-loop-on-off-relay", "hp-loop-keep-send-relay"} <= layout.relay_names
+
+
+def test_the_model_has_a_walk_for_every_channel_of_a_sieg_house() -> None:
+    layout = load_plant_layout(SIEG_LAYOUT_PATH)
+    model = DriftModel(layout.telemetry_by_channel, seed=7)
+    assert set(model.step(1_794_300_000_000)) == set(layout.telemetry_by_channel)

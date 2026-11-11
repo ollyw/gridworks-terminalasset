@@ -44,8 +44,8 @@ GWTA_SERVICE_ALIAS=<the layout's TerminalAsset alias> \
   uv run ta-plant --layout <hardware-layout.json>
 ```
 
-The plant reads one house's hardware layout (a `gw.house0.no.sieg`) and
-speaks two words, both wrapped in a `gw` envelope on `amq.topic`:
+The plant reads one house's hardware layout (a `gw.house0.layout` or a
+`gw.house0.no.sieg`) and speaks two words, both wrapped in a `gw` envelope on `amq.topic`:
 
 - `sim.plant.flux`, every `--flux-seconds`: a value for each enabled channel
   that a simulated sensing device captures, in the channel's own encoding.
