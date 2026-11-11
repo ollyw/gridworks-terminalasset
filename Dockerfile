@@ -9,12 +9,14 @@
 # The image holds the gwta package and the Katahdin FMU at
 # /opt/gwta/KatahdinPlant.fmu, and runs ta-plant. The FMU's binary is for
 # Linux on the processor the build ran on, which is the processor the image
-# is for.
+# is for. Either build fails if a component plant does not translate.
 
 FROM openmodelica/openmodelica:v1.27.1-minimal AS fmu
 WORKDIR /work
 COPY modelica/ ./
 RUN omc build_fmu.mos && test -f KatahdinPlant.fmu
+RUN omc check_components.mos > check_components.log; cat check_components.log; \
+    test "$(grep -c 'completed successfully' check_components.log)" = 2
 
 FROM scratch AS fmu-file
 COPY --from=fmu /work/KatahdinPlant.fmu /

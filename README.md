@@ -103,11 +103,27 @@ channel of a Katahdin layout reads and which FMU input each relay drives;
 `src/gwta/sensing.py` gives a tank module's thermistor voltage and a flow
 meter's pulse rate for the channels that carry those.
 
-`modelica/KatahdinComponents.mo` models the same plant as connected
-components (pipes, valves, pumps, tanks, the exchanger, the heat pump, the
-zoned house) with icons and a placed diagram, for a Modelica tool such as
-OMEdit or Dymola. `KatahdinComponents.Plant` has the inputs, outputs and
-parameters of `Katahdin.Plant`. The FMU is built from `Katahdin.mo`.
+`modelica/Hydronic.mo` is a library of the parts of a heating plant (pipes,
+valves, check valves, pumps, flow meters, tanks, a plate exchanger, heat
+pumps, a boiler, a zoned house), each with an icon, for a Modelica tool such
+as OMEdit or Dymola. Two plants are built of it, each a placed diagram of
+connected parts:
+
+- `KatahdinComponents.Plant` (`modelica/KatahdinComponents.mo`) is the
+  Katahdin house, with the inputs, outputs and parameters of
+  `Katahdin.Plant`.
+- `Beech.Plant` (`modelica/Beech.mo`) is a House0 plant, Beech: a split
+  heat pump behind a Siegenthaler valve, a buffer, three store tanks behind
+  an ISO valve and a charge/discharge valve, an oil boiler with its own
+  pump, and two zones, each part placed where the plant's schematic draws
+  it. Its inputs are what the relays and the 0-10 V outputs do (the heat
+  pump's call, the Siegenthaler valve's motor and direction, the
+  charge/discharge relay, each pump, each zone's call, the boiler's call);
+  its outputs are the temperatures, flows and powers the house senses. Its
+  coefficients are placeholders.
+
+The FMU is built from `Katahdin.mo`. `ta-plant` runs a Katahdin house and
+no other; the FMU build checks that both component plants translate.
 
 A relay acts through its contact. `katahdin.py` holds what a closed contact
 does (it feeds a valve's motor, runs the secondary pump, calls the heat

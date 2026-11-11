@@ -1,0 +1,10 @@
+// Checks that the two plants built of Hydronic.mo translate: each prints
+// "completed successfully" when its equations and its unknowns balance.
+loadFile("Hydronic.mo");
+loadFile("KatahdinComponents.mo");
+loadFile("Beech.mo");
+getErrorString();
+checkModel(KatahdinComponents.Plant);
+getErrorString();
+checkModel(Beech.Plant);
+getErrorString();
