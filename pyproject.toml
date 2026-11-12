@@ -26,7 +26,7 @@ dev = [
 [tool.pytest.ini_options]
 markers = [
     "live: needs a reachable rabbit broker (run with `pytest -m live`)",
-    "fmu: needs build/KatahdinPlant.fmu from scripts/build_fmu.sh (run with `pytest -m fmu`)",
+    "fmu: needs the FMUs scripts/build_fmu.sh puts in build/ (run with `pytest -m fmu`)",
 ]
 addopts = "-m 'not live and not fmu'"
 

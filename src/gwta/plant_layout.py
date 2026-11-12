@@ -115,11 +115,15 @@ def plant_layout(layout: Layout) -> PlantLayout:
     )
 
 
-def load_plant_layout(path: Path) -> PlantLayout:
+def load_layout(path: Path) -> Layout:
     decoded = SemaCodec().from_dict(json.loads(path.read_text()))
     if not isinstance(decoded, LAYOUT_WORDS):
         raise ValueError(
             f"{path} holds a {type(decoded).__name__}, and a plant reads a "
             f"{' or a '.join(word.__name__ for word in LAYOUT_WORDS)}"
         )
-    return plant_layout(decoded)
+    return decoded
+
+
+def load_plant_layout(path: Path) -> PlantLayout:
+    return plant_layout(load_layout(path))

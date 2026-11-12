@@ -5,7 +5,7 @@
 #
 # The live tests need the dev broker on localhost:5672 (gridworks-base
 # arm.sh / x86.sh; CI runs the same baked image as a service container).
-# The fmu tests need the Katahdin FMU, which this script generates with
+# The fmu tests need the plants' FMUs, which this script generates with
 # docker.
 #
 # Usage: ./ci.sh
@@ -24,7 +24,7 @@ if ! nc -z localhost 5672 2>/dev/null; then
   echo "ERROR: no broker on localhost:5672 — start the dev rabbit (gridworks-base arm.sh or x86.sh)." >&2
   exit 1
 fi
-step "generate the Katahdin FMU" scripts/build_fmu.sh
+step "generate the FMUs" scripts/build_fmu.sh
 # -o addopts="" lifts pyproject's default `-m 'not live and not fmu'` so the
 # live and the fmu tests run too.
 step "tests (offline + live + fmu)" uv run pytest -q -o addopts=""

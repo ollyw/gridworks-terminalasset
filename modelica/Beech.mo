@@ -14,8 +14,10 @@ package Beech
       annotation(Placement(transformation(origin = {1387.5, -112.5}, extent = {{-5, -5}, {5, 5}}, rotation = -90)));
     Hydronic.RealInput TOutdoor(unit = "K", start = 268.15) "Outdoor air temperature"
       annotation(Placement(transformation(origin = {1410, -112.5}, extent = {{-5, -5}, {5, 5}}, rotation = -90)));
-    Hydronic.RealInput primaryPumpOn(start = 0) "Primary pump: 0 off, 1 on"
-      annotation(Placement(transformation(origin = {1173.3, -210}, extent = {{-5, -5}, {5, 5}}, rotation = -90)));
+    Hydronic.RealInput primaryPumpScadaControl(start = 1) "Who runs the primary pump: 0 the heat pump, while it is called, 1 the scada"
+      annotation(Placement(transformation(origin = {1140, -250.5}, extent = {{-5, -5}, {5, 5}}, rotation = 90)));
+    Hydronic.RealInput primaryPumpOn(start = 0) "The scada's primary pump relay: 0 off, 1 on"
+      annotation(Placement(transformation(origin = {1110, -224.7}, extent = {{-5, -5}, {5, 5}})));
     Hydronic.RealInput primaryPumpSpeed(start = 1) "Primary pump speed as a fraction of full"
       annotation(Placement(transformation(origin = {1187.7, -210}, extent = {{-5, -5}, {5, 5}}, rotation = -90)));
     Hydronic.RealInput siegMotorOn(start = 0) "Siegenthaler valve motor: 0 stopped, 1 running"
@@ -34,8 +36,8 @@ package Beech
       annotation(Placement(transformation(origin = {354, -870}, extent = {{-5, -5}, {5, 5}}, rotation = 90)));
     Hydronic.RealInput zoneScadaCall[nZones](each start = 0) "The scada's call for each zone: 0 no call, 1 call"
       annotation(Placement(transformation(origin = {378, -870}, extent = {{-5, -5}, {5, 5}}, rotation = 90)));
-    Hydronic.RealInput boilerCall(start = 0) "The boiler: 0 not called, 1 called, when its pump runs and its burner holds its aquastat setting"
-      annotation(Placement(transformation(origin = {120, -277.5}, extent = {{-5, -5}, {5, 5}})));
+    Hydronic.RealInput boilerScadaControl(start = 1) "Who holds the boiler: 0 its aquastat, on whose call its pump runs and its burner fires, 1 the scada, which holds it off"
+      annotation(Placement(transformation(origin = {109.5, -277.5}, extent = {{-5, -5}, {5, 5}})));
 
     parameter Real rhoWater(unit = "kg/m3") = 990;
     parameter Real cpWater(unit = "J/(kg.K)") = 4180;
@@ -101,6 +103,8 @@ package Beech
     parameter Real PBoiler(unit = "W") = 250 "Electrical power of the burner while it fires";
     parameter Real TBoilerAquastat(unit = "K") = 355.15 "Boiler water temperature at which the burner stops";
     parameter Real dTBoilerAquastat(unit = "K") = 10 "Fall below TBoilerAquastat at which the burner fires again";
+    parameter Real TBackupAquastat(unit = "K") = 322.15 "Middle of the buffer at which the boiler's own call ends";
+    parameter Real dTBackupAquastat(unit = "K") = 8 "Fall below TBackupAquastat at which the boiler's own call begins";
 
     parameter Real CEmitter(unit = "J/K") = 90e3 "Water and metal of one zone's emitters";
     parameter Real UAEmitter(unit = "W/K") = 200 "One zone's emitters to its room";
@@ -198,6 +202,8 @@ package Beech
       annotation(Placement(transformation(origin = {1002, -375}, extent = {{-12, -12}, {12, 12}}, rotation = 90)));
     Hydronic.Pump primaryPump(c = cWater, dpShutoff = dpPumpShutoff, VFlowMax = VFlowPumpMax, PNominal = PPumpNominal)
       annotation(Placement(transformation(origin = {1180.5, -255}, extent = {{-12, -12}, {12, 12}})));
+    Hydronic.Changeover primaryPumpRelay "Who runs the primary pump: at rest the heat pump, driven the scada"
+      annotation(Placement(transformation(origin = {1140, -217.5}, extent = {{-12, -12}, {12, 12}})));
     Hydronic.Volume hotHeader(C = cWater * VPipe, UA = UAPipe, TSurroundings = TAmbient, TStart = TStartPlant) "Where the heat pump, the boiler and the store hot pipe meet, on the far side of the ISO valve from the buffer"
       annotation(Placement(transformation(origin = {885, -193.5}, extent = {{-12, -12}, {12, 12}})));
     Hydronic.Valve isoValve(c = cWater, dpNominal = dpIsoNominal, VFlowNominal = VFlowNominal, leakage = leakage) "The ISO valve, hot header to the buffer"
@@ -272,6 +278,8 @@ package Beech
       annotation(Placement(transformation(origin = {330, -112.5}, extent = {{-12, -12}, {12, 12}}, rotation = 90)));
     Hydronic.CheckedPump boilerPump(c = cWater, dpShutoff = dpPumpShutoff, VFlowMax = VFlowPumpMax, PNominal = PPumpNominal, dpCheckNominal = dpPumpCheckNominal, VFlowNominal = VFlowNominal, dpCrack = dpCrack, leakage = leakage, speed = 1) "The boiler pump, at one speed, and the check valve in its flange"
       annotation(Placement(transformation(origin = {366, -184.5}, extent = {{-12, -12}, {12, 12}}, rotation = -90)));
+    Hydronic.Aquastat boilerAquastat(TSet = TBackupAquastat, dT = dTBackupAquastat) "The boiler's own call, on the middle of the buffer"
+      annotation(Placement(transformation(origin = {142.5, -277.5}, extent = {{-12, -12}, {12, 12}})));
 
   protected
     parameter Real cWater(unit = "J/(m3.K)") = rhoWater * cpWater;
@@ -390,8 +398,14 @@ package Beech
       annotation(Line(points = {{1410, -112.5}, {1410, -150}}, color = {0, 0, 127}));
     connect(TOutdoor, zones.TOutdoor)
       annotation(Line(points = {{1410, -112.5}, {1507.5, -112.5}, {1507.5, -1162.5}, {142.5, -1162.5}, {142.5, -796.5}, {276, -796.5}}, color = {0, 0, 127}));
-    connect(primaryPumpOn, primaryPump.on)
-      annotation(Line(points = {{1173.3, -210}, {1173.3, -243}}, color = {0, 0, 127}));
+    connect(primaryPumpOn, primaryPumpRelay.u1)
+      annotation(Line(points = {{1110, -224.7}, {1128, -224.7}}, color = {0, 0, 127}));
+    connect(primaryPumpScadaControl, primaryPumpRelay.control)
+      annotation(Line(points = {{1140, -250.5}, {1140, -229.5}}, color = {0, 0, 127}));
+    connect(heatPump.pumpCall, primaryPumpRelay.u0)
+      annotation(Line(points = {{1342.5, -240}, {1320, -240}, {1320, -177}, {1113, -177}, {1113, -210.3}, {1128, -210.3}}, color = {0, 0, 127}));
+    connect(primaryPumpRelay.y, primaryPump.on)
+      annotation(Line(points = {{1152, -217.5}, {1173.3, -217.5}, {1173.3, -243}}, color = {0, 0, 127}));
     connect(primaryPumpSpeed, primaryPump.speed)
       annotation(Line(points = {{1187.7, -210}, {1187.7, -243}}, color = {0, 0, 127}));
     connect(siegMotorOn, siegMotor.on)
@@ -418,10 +432,12 @@ package Beech
       annotation(Line(points = {{354, -870}, {354, -825}}, color = {0, 0, 127}));
     connect(zoneScadaCall, zones.scadaCall)
       annotation(Line(points = {{378, -870}, {378, -825}}, color = {0, 0, 127}));
-    connect(boilerCall, boiler.call)
-      annotation(Line(points = {{120, -277.5}, {175.5, -277.5}}, color = {0, 0, 127}));
-    connect(boilerCall, boilerPump.on)
-      annotation(Line(points = {{120, -277.5}, {120, -150}, {405, -150}, {405, -177.3}, {378, -177.3}}, color = {0, 0, 127}));
+    connect(boilerScadaControl, boilerAquastat.held)
+      annotation(Line(points = {{109.5, -277.5}, {130.5, -277.5}}, color = {0, 0, 127}));
+    connect(boilerAquastat.call, boiler.call)
+      annotation(Line(points = {{154.5, -277.5}, {175.5, -277.5}}, color = {0, 0, 127}));
+    connect(boilerAquastat.call, boilerPump.on)
+      annotation(Line(points = {{154.5, -277.5}, {154.5, -150}, {405, -150}, {405, -177.3}, {378, -177.3}}, color = {0, 0, 127}));
 
     hpLwt = heatPump.T;
     hpEwt = siegTee.T;
@@ -455,6 +471,7 @@ package Beech
     tankDepth[1, :] = hotTank.TSensor;
     tankDepth[2, :] = middleTank.TSensor;
     tankDepth[3, :] = coldTank.TSensor;
+    boilerAquastat.T = buffer.TSensor[2];
 
     der(EHeatPump) = heatPump.Q;
     der(EBoiler) = boiler.Q;

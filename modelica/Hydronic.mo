@@ -320,7 +320,7 @@ package Hydronic
   end HeatPump;
 
   model SplitHeatPump
-    "The indoor unit of a split heat pump, its water moved by a pump elsewhere: the compressor runs only while water flows"
+    "The indoor unit of a split heat pump, its water moved by a pump elsewhere that it calls for: the compressor runs only while water flows"
     extends HeatPumpCycle;
     parameter Real UA(unit = "W/K") "Loss of the indoor unit to its surroundings";
     parameter Real TSurroundings(unit = "K");
@@ -333,6 +333,7 @@ package Hydronic
     RealInput call "The scada's call: 0 no call, 1 call" annotation(Placement(transformation(origin = {-50, 100}, extent = {{-10, -10}, {10, 10}}, rotation = -90)));
     RealInput scadaControl "Who holds the call: 0 the aquastat, which makes none here, 1 the scada" annotation(Placement(transformation(origin = {0, 100}, extent = {{-10, -10}, {10, 10}}, rotation = -90)));
     RealInput TOutdoor(unit = "K") annotation(Placement(transformation(origin = {50, 100}, extent = {{-10, -10}, {10, 10}}, rotation = -90)));
+    RealOutput pumpCall "Its call for the pump that moves its water: 1 while it is called" annotation(Placement(transformation(origin = {-100, -50}, extent = {{-10, -10}, {10, 10}}, rotation = 180)));
     Real enable = min(max(call, 0), 1) * min(max(scadaControl, 0), 1);
     Real q(unit = "m3/s") = inlet.q "Water flow";
     Boolean flowPermit = q > VFlowMin;
@@ -341,6 +342,7 @@ package Hydronic
     Real QLoss(unit = "W") = UA * (T - TSurroundings);
   equation
     asked = enable * (if flowPermit then 1 else 0);
+    pumpCall = enable;
     TAir = TOutdoor;
     inlet.T = T;
     outlet.T = T;
@@ -589,6 +591,36 @@ package Hydronic
       Rectangle(extent = {{-100, -100}, {100, 100}}, lineColor = {0, 0, 127}, fillColor = {214, 228, 245}, fillPattern = FillPattern.Solid),
       Text(extent = {{-90, -60}, {90, 60}}, textString = "1-u", textColor = {0, 0, 0})}));
   end Complement;
+
+  block Changeover "A double-throw relay: it passes u0 while its control is 0 and u1 while it is 1"
+    RealInput u0 annotation(Placement(transformation(origin = {-100, 60}, extent = {{-10, -10}, {10, 10}})));
+    RealInput u1 annotation(Placement(transformation(origin = {-100, -60}, extent = {{-10, -10}, {10, 10}})));
+    RealInput control annotation(Placement(transformation(origin = {0, -100}, extent = {{-10, -10}, {10, 10}}, rotation = 90)));
+    RealOutput y annotation(Placement(transformation(origin = {100, 0}, extent = {{-10, -10}, {10, 10}})));
+  equation
+    y = if control > 0.5 then u1 else u0;
+    annotation(Icon(graphics = {
+      Rectangle(extent = {{-100, -100}, {100, 100}}, lineColor = {0, 0, 127}, fillColor = {214, 228, 245}, fillPattern = FillPattern.Solid),
+      Line(points = {{-90, 60}, {-40, 60}}, color = {0, 0, 127}),
+      Line(points = {{-90, -60}, {-40, -60}}, color = {0, 0, 127}),
+      Line(points = {{-40, 60}, {40, 0}, {90, 0}}, color = {0, 0, 127})}));
+  end Changeover;
+
+  block Aquastat
+    "A thermostat on water: it calls from a fall below its setting until the water is back at it, unless it is held off"
+    parameter Real TSet(unit = "K") "Water temperature at which the call ends";
+    parameter Real dT(unit = "K") "Fall below TSet at which the call begins";
+    RealInput T(unit = "K") "The water it senses" annotation(Placement(transformation(origin = {0, 100}, extent = {{-10, -10}, {10, 10}}, rotation = -90)));
+    RealInput held "0 free to call, 1 held off" annotation(Placement(transformation(origin = {-100, 0}, extent = {{-10, -10}, {10, 10}})));
+    RealOutput call "0 no call, 1 call" annotation(Placement(transformation(origin = {100, 0}, extent = {{-10, -10}, {10, 10}})));
+    Boolean cold(start = false, fixed = true);
+  equation
+    cold = if pre(cold) then T < TSet else T < TSet - dT;
+    call = if cold and held < 0.5 then 1 else 0;
+    annotation(Icon(graphics = {
+      Rectangle(extent = {{-100, -100}, {100, 100}}, lineColor = {0, 0, 127}, fillColor = {214, 228, 245}, fillPattern = FillPattern.Solid),
+      Text(extent = {{-80, -70}, {80, 70}}, textString = "T", textColor = {0, 0, 0})}));
+  end Aquastat;
 
   model Boiler
     "A boiler as the water and iron on its branch, fired to hold its aquastat setting while it is called"

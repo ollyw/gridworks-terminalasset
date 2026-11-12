@@ -1,8 +1,15 @@
-// Builds KatahdinPlant.fmu in the working directory from Katahdin.mo beside it:
-// a co-simulation FMU for FMI 2.0 that carries its own CVODE solver, so the
-// accuracy of a step does not depend on how long the caller makes it.
+// Builds two FMUs in the working directory from the models beside it:
+// KatahdinPlant.fmu from Katahdin.mo, and BeechPlant.fmu from Beech.mo and
+// the Hydronic.mo it is built of. Each is a co-simulation FMU for FMI 2.0
+// that carries its own CVODE solver, so the accuracy of a step does not
+// depend on how long the caller makes it.
 setCommandLineOptions("--fmiFlags=s:cvode");
 loadFile("Katahdin.mo");
 getErrorString();
 buildModelFMU(Katahdin.Plant, version = "2.0", fmuType = "cs", fileNamePrefix = "KatahdinPlant");
+getErrorString();
+loadFile("Hydronic.mo");
+loadFile("Beech.mo");
+getErrorString();
+buildModelFMU(Beech.Plant, version = "2.0", fmuType = "cs", fileNamePrefix = "BeechPlant");
 getErrorString();

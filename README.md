@@ -35,7 +35,7 @@ working rules.
 
 Early. Two actors run against a dev RabbitMQ broker: `ta-hello`, which
 connects and emits a heartbeat, and `ta-plant`, a simulated plant whose
-values either drift at random or are the physics of a Katahdin house.
+values either drift at random or are the physics of its house.
 
 ## The simulated plant
 
@@ -63,7 +63,9 @@ The plant's inside is a `PlantModel` (`src/gwta/plant_model.py`): time and
 actuations in, channel values out, with no knowledge of the broker. There
 are two. `DriftModel` is a seeded random walk per channel inside bounds set
 by the channel's telemetry, which keeps the actuations it hears and does
-not act on them. `FmuPlantModel` is the physics of a Katahdin house.
+not act on them. `FmuPlantModel` is the physics of the house, run from an
+FMU: `KatahdinPlant.fmu` for a `gw.katahdin.layout`, `BeechPlant.fmu` for a
+`gw.house0.layout`. No FMU is the plant of a `gw.house0.no.sieg`.
 
 ## The Katahdin plant
 
@@ -117,13 +119,15 @@ connected parts:
   an ISO valve and a charge/discharge valve, an oil boiler with its own
   pump, and two zones, each part placed where the plant's schematic draws
   it. Its inputs are what the relays and the 0-10 V outputs do (the heat
-  pump's call, the Siegenthaler valve's motor and direction, the
-  charge/discharge relay, each pump, each zone's call, the boiler's call);
+  pump's call and who holds it, the Siegenthaler valve's motor and
+  direction, the charge/discharge relay, each pump and who runs the
+  primary one, each zone's call and who holds it, who holds the boiler);
   its outputs are the temperatures, flows and powers the house senses. Its
   coefficients are placeholders.
 
-The FMU is built from `Katahdin.mo`. `ta-plant` runs a Katahdin house and
-no other; the FMU build checks that both component plants translate.
+`KatahdinPlant.fmu` is built from `Katahdin.mo` and `BeechPlant.fmu` from
+`Beech.mo`; the FMU build also checks that `KatahdinComponents.Plant`
+translates.
 
 A relay acts through its contact. `katahdin.py` holds what a closed contact
 does (it feeds a valve's motor, runs the secondary pump, calls the heat
@@ -189,10 +193,54 @@ docker run --rm --network host \
   --fmu /opt/gwta/KatahdinPlant.fmu
 ```
 
-The image generates the FMU and installs the package beside it; its
-entrypoint is `ta-plant`. The FMU's binary is for Linux on the processor it
-was built on, so the FMU from `scripts/build_fmu.sh` loads on a Linux host
+The image generates both FMUs, `/opt/gwta/KatahdinPlant.fmu` and
+`/opt/gwta/BeechPlant.fmu`, and installs the package beside them; its
+entrypoint is `ta-plant`. An FMU's binary is for Linux on the processor it
+was built on, so an FMU from `scripts/build_fmu.sh` loads on a Linux host
 and, on a Mac, the container is the place to run it.
+
+## The House0 plant
+
+```shell
+scripts/build_fmu.sh
+GWTA_SERVICE_ALIAS=<the layout's TerminalAsset alias> \
+  uv run ta-plant --layout <house0-layout.json> --fmu build/BeechPlant.fmu
+```
+
+A House0 house with a Siegenthaler loop is run from `Beech.Plant`, so the
+house it can be is Beech's: two zone circuits and three store tanks. The
+plant refuses a layout with another count of either.
+`src/gwta/house0.py` says which FMU output each channel reads and which FMU
+input each relay drives:
+
+| Relay | De-energised | Energised |
+| --- | --- | --- |
+| `hp-failsafe-relay` | the heat pump is its aquastat's, which makes no call | the scada holds the call |
+| `hp-scada-ops-relay` | the scada calls the heat pump | no call |
+| `aquastat-ctrl-relay` | the boiler holds the middle of the buffer at its aquastat setting | the boiler is off |
+| `primary-pump-failsafe-relay` | the heat pump runs the primary pump while it is called | the scada runs it |
+| `primary-pump-scada-ops-relay` | off | the scada's primary pump is on |
+| `hp-loop-on-off-relay` | the Siegenthaler valve's motor runs | the valve holds |
+| `hp-loop-keep-send-relay` | the motor runs toward send | toward keep |
+| `charge-discharge-relay` | the store discharges and the ISO valve is open | the store charges and the ISO valve is closed |
+| `store-pump-relay` | off | the store pump is on |
+| a zone's failsafe relay | the zone's thermostat calls | the scada holds the zone's call |
+| a zone's ops relay | no call | the scada calls the zone |
+
+The table is for a house whose layout gives each relay those two states
+that way round: which state a relay is in when energised is read from its
+`relay.control.config`, and a layout that does not say it is refused. With
+every relay de-energised the boiler heats the house and the Siegenthaler
+valve travels to send. The relay that powers the picos and the one on the
+thermostats' common wire switch nothing the model has.
+
+The Siegenthaler valve takes 94 seconds between its stops and passes from
+all sent to all kept between 26 and 56 seconds of that travel
+(`siegTravel`, `siegOnset`, `siegComplete`). The outdoor temperature
+(`TOutdoor`) and the pump speeds (`primaryPumpSpeed`, `storePumpSpeed`,
+`distPumpSpeed`, each 0 to 1) are inputs that hold their start value
+through a run, and `--fmu-overrides` sets them and any parameter as it does
+for a Katahdin house.
 
 ## Development
 

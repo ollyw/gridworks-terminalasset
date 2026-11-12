@@ -12,10 +12,12 @@ and relay node names are all that cross: what a relay does, the plant
 works out from the layout.
 
 With no more than a layout the values drift at random. With ``--fmu`` they
-are the physics of a Katahdin house, run from the FMU that
-``scripts/build_fmu.sh`` generates::
+are the physics of the house, run from an FMU that ``scripts/build_fmu.sh``
+generates: ``KatahdinPlant.fmu`` for a Katahdin house, ``BeechPlant.fmu``
+for a House0 house with a Siegenthaler loop::
 
     uv run ta-plant --layout <katahdin-layout.json> --fmu build/KatahdinPlant.fmu
+    uv run ta-plant --layout <house0-layout.json> --fmu build/BeechPlant.fmu
 
 ``GWTA_SERVICE_ALIAS`` must be the alias of the layout's TerminalAsset
 GNode, whose ``g.node.gt`` the plant writes to ``GWTA_G_NODE_PATH`` when
@@ -27,7 +29,7 @@ import json
 import logging
 import threading
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -39,14 +41,22 @@ from gwbase.wrapped import wrap_bytes
 from pydantic import TypeAdapter
 
 from gwta.config import GwtaSettings
+from gwta.fmu_model import FmuPlantModel
 from gwta.hello import provision_topology, wait_for_consuming
+from gwta.house0 import house0_model
 from gwta.katahdin import katahdin_model
-from gwta.plant_layout import PlantLayout, load_plant_layout
+from gwta.plant_layout import Layout, PlantLayout, load_layout, plant_layout
 from gwta.plant_model import DriftModel, PlantModel
 from gwta.sema.base import SemaError
 from gwta.sema.codec import SemaCodec
 from gwta.sema.property_format import UTCMilliseconds
-from gwta.sema.types import GNodeGt, SimPlantActuation, SimPlantFlux
+from gwta.sema.types import (
+    GNodeGt,
+    House0Layout,
+    KatahdinLayout,
+    SimPlantActuation,
+    SimPlantFlux,
+)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -188,6 +198,27 @@ class SimulatedPlant(GridworksActor):
         )
 
 
+def fmu_model(
+    word: Layout,
+    *,
+    fmu_path: Path,
+    layout: PlantLayout,
+    overrides: Mapping[str, float],
+    start_ms: UTCMilliseconds,
+) -> FmuPlantModel:
+    """The physics of the house a layout word describes. A House0 house
+    with no Siegenthaler loop has none."""
+    if isinstance(word, KatahdinLayout):
+        return katahdin_model(
+            fmu_path=fmu_path, layout=layout, overrides=overrides, start_ms=start_ms
+        )
+    if isinstance(word, House0Layout):
+        return house0_model(
+            fmu_path=fmu_path, layout=layout, overrides=overrides, start_ms=start_ms
+        )
+    raise ValueError(f"no FMU is the plant of a {type(word).__name__}")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -208,7 +239,7 @@ def main() -> None:
     parser.add_argument(
         "--fmu",
         type=Path,
-        help="the Katahdin plant's FMU; without it the values drift at random",
+        help="the FMU of the layout's plant; without it the values drift at random",
     )
     parser.add_argument(
         "--fmu-overrides",
@@ -232,7 +263,8 @@ def main() -> None:
     logging.getLogger("pika").setLevel(logging.WARNING)
 
     settings = GwtaSettings.load()
-    layout = load_plant_layout(args.layout)
+    word = load_layout(args.layout)
+    layout = plant_layout(word)
     write_g_node_json(settings.g_node_path, layout.g_node)
 
     if not args.no_provision:
@@ -247,8 +279,12 @@ def main() -> None:
             if args.fmu_overrides is None
             else OVERRIDES.validate_json(args.fmu_overrides.read_bytes())
         )
-        model = katahdin_model(
-            fmu_path=args.fmu, layout=layout, overrides=overrides, start_ms=wall_ms()
+        model = fmu_model(
+            word,
+            fmu_path=args.fmu,
+            layout=layout,
+            overrides=overrides,
+            start_ms=wall_ms(),
         )
     plant = SimulatedPlant(
         settings=settings,
