@@ -123,7 +123,8 @@ connected parts:
   direction, the charge/discharge relay, each pump and who runs the
   primary one, each zone's call and who holds it, who holds the boiler);
   its outputs are the temperatures, flows and powers the house senses. Its
-  coefficients are placeholders.
+  coefficients are placeholders, but for its zones', which are fitted to
+  the house.
 
 `KatahdinPlant.fmu` is built from `Katahdin.mo` and `BeechPlant.fmu` from
 `Beech.mo`; the FMU build also checks that `KatahdinComponents.Plant`
@@ -233,6 +234,35 @@ that way round: which state a relay is in when energised is read from its
 every relay de-energised the boiler heats the house and the Siegenthaler
 valve travels to send. The relay that powers the picos and the one on the
 thermostats' common wire switch nothing the model has.
+
+Each zone has coefficients of its own (`Hydronic.Zones`), one value a zone,
+down then up:
+
+- **A thermostat cycles its call.** The share of the time it calls rises
+  from none to all as its air falls through `dTZoneThrottle` about its
+  setpoint (`TZoneSet`, 67 °F down and 63 °F up), and no call and no pause
+  is shorter than `tCallMin`: five minutes, which is three cycles an hour
+  at half load. While it calls, the meter on its wire reads `PZoneValve`.
+- **The water passes along an emitter** cut into four lengths
+  (`CEmitter`, `UAEmitter`), so the return stays cool until the hot water
+  has crossed it, and an emitter filled by a short call gives its heat up
+  over the half hour after.
+- **A room is its air and its fabric.** The air, with what warms with it
+  within the hour (`CAir`), is what the thermostat and the zone's
+  temperature channel read; it passes heat to the fabric (`UAFabric`,
+  `CFabric`), which loses it outdoors (`UAZone`).
+
+The values are fitted to what Beech's thermostat wires, zone temperatures
+and distribution loop showed overnight on 17 November 2026, its buffer near
+77 °C: the down zone called for six minutes every 50 and its air moved
+under half a kelvin, the up zone called for five minutes every three and a
+half hours and its air rose three kelvin after each call, and a call put
+about 6 MJ into the down zone and 4.4 MJ into the up zone. That night's outdoor
+temperature is not in the house's data: the losses are fitted at the
+plant's own -5 °C. The zone resistances (`dpZoneNominal`) are fitted to the
+flows the house's meter showed (2.0 US gpm with the down zone calling, 1.5
+with the up zone, 3.0 with both) with the distribution pump at full speed,
+as it runs here. Each zone starts at its setpoint (`TStartZone`).
 
 The Siegenthaler valve takes 94 seconds between its stops and passes from
 all sent to all kept between 26 and 56 seconds of that travel

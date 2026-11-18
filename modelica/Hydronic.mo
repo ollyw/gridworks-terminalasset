@@ -482,17 +482,88 @@ package Hydronic
   end ZonedDistribution;
 
   model Zones
-    "The zones of a house whose circulator is a part of its own: each zone valve follows its thermostat, or the scada while the scada holds that zone"
-    extends ZoneSet;
+    "The zones of a house whose circulator is a part of its own, in parallel between a supply and a return and each with coefficients of its own: a thermostat that cycles its call, a zone valve, an emitter the water passes along and a room of air and fabric. A zone valve follows its thermostat, or the scada while the scada holds that zone"
+    parameter Integer nZones = 4;
+    parameter Integer nPass = 4 "Lengths each emitter is cut into, which the water passes in turn";
+    parameter Real c(unit = "J/(m3.K)") "Heat capacity of the water by volume";
+    parameter Real dpZoneNominal[nZones](each unit = "Pa") "Each zone's valve and emitter at VFlowZoneNominal";
+    parameter Real VFlowZoneNominal(unit = "m3/s") "Flow at which dpZoneNominal is given";
+    parameter Real leakage "Conductance of a closed zone valve as a fraction of its open conductance";
+    parameter Real CEmitter[nZones](each unit = "J/K") "Water and metal of each zone's emitters";
+    parameter Real UAEmitter[nZones](each unit = "W/K") "Each zone's emitters to its air";
+    parameter Real CAir[nZones](each unit = "J/K") "Each zone's air and what warms with it within the hour";
+    parameter Real UAFabric[nZones](each unit = "W/K") "Each zone's air to its fabric";
+    parameter Real CFabric[nZones](each unit = "J/K") "Each zone's fabric";
+    parameter Real UAZone[nZones](each unit = "W/K") "Each zone's fabric to the outdoor air";
+    parameter Real TZoneSet[nZones](each unit = "K") "Thermostat setpoints";
+    parameter Real dTZoneThrottle(unit = "K") "Span of air temperature, centred on the setpoint, over which a thermostat goes from never calling to always calling";
+    parameter Real tCallMin(unit = "s") "Shortest call and shortest pause of a thermostat: a quarter of its cycle at half load";
+    parameter Real PZoneValve(unit = "W") "What the meter on a zone's thermostat wire reads while the zone calls";
+    parameter Real TStartEmitter(unit = "K") "Every emitter at time zero";
+    parameter Real TStartZone[nZones](each unit = "K") "Air and fabric of each zone at time zero";
+    FlowPort supply annotation(Placement(transformation(origin = {0, 100}, extent = {{-10, -10}, {10, 10}})));
+    FlowPort ret annotation(Placement(transformation(origin = {0, -100}, extent = {{-10, -10}, {10, 10}})));
+    RealInput TOutdoor(unit = "K") annotation(Placement(transformation(origin = {-100, -50}, extent = {{-10, -10}, {10, 10}})));
     RealInput scadaControl[nZones] "Who holds each zone's call: 0 its thermostat, 1 the scada" annotation(Placement(transformation(origin = {30, -100}, extent = {{-10, -10}, {10, 10}}, rotation = 90)));
     RealInput scadaCall[nZones] "The scada's call for each zone: 0 no call, 1 call" annotation(Placement(transformation(origin = {70, -100}, extent = {{-10, -10}, {10, 10}}, rotation = 90)));
     RealOutput call "1 while a zone valve is open, which is when the circulator is to run" annotation(Placement(transformation(origin = {100, -50}, extent = {{-10, -10}, {10, 10}})));
+    Real TEmitter[nZones, nPass](each unit = "K", each start = TStartEmitter, each fixed = true) "Each emitter by length, supply end first";
+    Real TZone[nZones](each unit = "K", start = TStartZone, each fixed = true) "Air of each zone, which its thermostat reads";
+    Real TFabric[nZones](each unit = "K", start = TStartZone, each fixed = true);
+    Real load[nZones] "Share of the time each thermostat means to call";
+    Boolean calling[nZones](each start = false, each fixed = true) "Each thermostat's call";
+    discrete Real tSwitch[nZones](each unit = "s", each start = 0, each fixed = true) "When each thermostat's call last began or ended";
+    Real position[nZones] "Zone valves: 0 closed, 1 open";
+    Real anyOpen "1 while a zone valve is open";
+    Real qZone[nZones](each unit = "m3/s") "Flow through each zone, supply to return";
+    Real q(unit = "m3/s") "Flow through all the zones";
+    Real callPower[nZones](each unit = "W") = PZoneValve * position;
+    Real QLoss(unit = "W") = sum(UAZone[i] * (TFabric[i] - TOutdoor) for i in 1:nZones);
+    Real E(unit = "J") = sum(CEmitter[i] * (TEmitterMean[i] - 273.15) + CAir[i] * (TZone[i] - 273.15) + CFabric[i] * (TFabric[i] - 273.15) for i in 1:nZones) "Heat held, above 0 degC";
+  protected
+    Real TEmitterMean[nZones](each unit = "K") = {sum(TEmitter[i, :]) / nPass for i in 1:nZones};
+    Real TAhead[nZones, nPass](each unit = "K") "What reaches each length with the flow from the supply";
+    Real TBehind[nZones, nPass](each unit = "K") "What reaches each length with a flow from the return";
+    Real qIn[nZones](each unit = "m3/s") = {noEvent(max(qZone[i], 0)) for i in 1:nZones};
+    Real qBack[nZones](each unit = "m3/s") = {noEvent(max(-qZone[i], 0)) for i in 1:nZones};
   equation
     for i in 1:nZones loop
+      load[i] = min(max(0.5 + (TZoneSet[i] - TZone[i]) / dTZoneThrottle, 0), 1);
+      calling[i] = if pre(calling[i]) then (time - pre(tSwitch[i])) * (1 - load[i]) < tCallMin
+        else (time - pre(tSwitch[i])) * load[i] >= tCallMin;
+      when change(calling[i]) then
+        tSwitch[i] = time;
+      end when;
       position[i] = if scadaControl[i] > 0.5 then (if scadaCall[i] > 0.5 then 1 else 0) else (if calling[i] then 1 else 0);
+      qZone[i] = (leakage + (1 - leakage) * position[i]) * VFlowZoneNominal / dpZoneNominal[i] * (supply.p - ret.p);
+      TAhead[i, 1] = supply.T;
+      TBehind[i, nPass] = ret.T;
+      for j in 2:nPass loop
+        TAhead[i, j] = TEmitter[i, j - 1];
+        TBehind[i, j - 1] = TEmitter[i, j];
+      end for;
+      for j in 1:nPass loop
+        CEmitter[i] / nPass * der(TEmitter[i, j]) = c * (qIn[i] * (TAhead[i, j] - TEmitter[i, j]) + qBack[i] * (TBehind[i, j] - TEmitter[i, j]))
+          - UAEmitter[i] / nPass * (TEmitter[i, j] - TZone[i]);
+      end for;
+      CAir[i] * der(TZone[i]) = UAEmitter[i] * (TEmitterMean[i] - TZone[i]) - UAFabric[i] * (TZone[i] - TFabric[i]);
+      CFabric[i] * der(TFabric[i]) = UAFabric[i] * (TZone[i] - TFabric[i]) - UAZone[i] * (TFabric[i] - TOutdoor);
     end for;
-    pManifold = ret.p;
+    anyOpen = min(sum(position), 1);
+    q = sum(qZone);
+    supply.q = q;
+    ret.q = -q;
+    supply.H = c * sum(qIn[i] * supply.T - qBack[i] * TEmitter[i, 1] for i in 1:nZones);
+    ret.H = c * sum(qBack[i] * ret.T - qIn[i] * TEmitter[i, nPass] for i in 1:nZones);
     call = anyOpen;
+    annotation(Icon(graphics = {
+      Rectangle(extent = {{-100, -100}, {100, 100}}, lineColor = {0, 0, 0}, fillColor = {255, 244, 214}, fillPattern = FillPattern.Solid),
+      Polygon(points = {{-100, 100}, {0, 150}, {100, 100}}, lineColor = {0, 0, 0}, fillColor = {255, 244, 214}, fillPattern = FillPattern.Solid),
+      Rectangle(extent = {{-60, 10}, {-40, 70}}, lineColor = {0, 90, 180}, fillColor = {170, 213, 255}, fillPattern = FillPattern.Solid),
+      Rectangle(extent = {{-30, 10}, {-10, 70}}, lineColor = {0, 90, 180}, fillColor = {170, 213, 255}, fillPattern = FillPattern.Solid),
+      Rectangle(extent = {{10, 10}, {30, 70}}, lineColor = {0, 90, 180}, fillColor = {170, 213, 255}, fillPattern = FillPattern.Solid),
+      Rectangle(extent = {{40, 10}, {60, 70}}, lineColor = {0, 90, 180}, fillColor = {170, 213, 255}, fillPattern = FillPattern.Solid),
+      Text(extent = {{-300, -150}, {300, -110}}, textString = "%name", textColor = {0, 0, 0})}));
   end Zones;
 
   model CheckValve

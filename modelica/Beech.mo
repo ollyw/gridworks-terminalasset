@@ -58,7 +58,7 @@ package Beech
     parameter Real dpChargeNominal(unit = "Pa") = 2.0e3 "Charge/discharge valve, at charge, to the cold header";
     parameter Real dpDischargeNominal(unit = "Pa") = 2.0e3 "Charge/discharge valve, at discharge, to the store pump";
     parameter Real dpBoilerNominal(unit = "Pa") = 3.0e3 "The boiler's branch and its check valve, beyond the cracking pressure";
-    parameter Real dpZoneNominal(unit = "Pa") = 18.5e3 "One zone's valve and emitter at VFlowZoneNominal";
+    parameter Real dpZoneNominal[nZones](each unit = "Pa") = {38.8e3, 56.7e3} "Each zone's valve and emitter at VFlowZoneNominal";
     parameter Real leakage = 1e-6 "Conductance of a closed valve as a fraction of its open conductance";
     parameter Real VFlowMeterMin(unit = "m3/s") = 1.26e-5 "Flow below which a flow meter reads zero: 0.2 US gpm";
 
@@ -106,16 +106,19 @@ package Beech
     parameter Real TBackupAquastat(unit = "K") = 322.15 "Middle of the buffer at which the boiler's own call ends";
     parameter Real dTBackupAquastat(unit = "K") = 8 "Fall below TBackupAquastat at which the boiler's own call begins";
 
-    parameter Real CEmitter(unit = "J/K") = 90e3 "Water and metal of one zone's emitters";
-    parameter Real UAEmitter(unit = "W/K") = 200 "One zone's emitters to its room";
-    parameter Real CZone(unit = "J/K") = 8e6 "Air and fabric of one zone as a single lump";
-    parameter Real UAZone(unit = "W/K") = 140 "One zone to the outdoor air";
-    parameter Real TZoneSet(unit = "K") = 293.15 "Thermostat setpoint";
-    parameter Real dTZoneDeadband(unit = "K") = 0.6 "Thermostat swing, centred on the setpoint";
-    parameter Real PZoneValve(unit = "W") = 10 "Power on a zone's thermostat wire while it calls";
+    parameter Real CEmitter[nZones](each unit = "J/K") = {185e3, 107e3} "Water and metal of each zone's emitters";
+    parameter Real UAEmitter[nZones](each unit = "W/K") = {100, 90} "Each zone's emitters to its air";
+    parameter Real CAir[nZones](each unit = "J/K") = {3e6, 0.9e6} "Each zone's air and what warms with it within the hour";
+    parameter Real UAFabric[nZones](each unit = "W/K") = {1500, 250} "Each zone's air to its fabric";
+    parameter Real CFabric[nZones](each unit = "J/K") = {15e6, 10e6} "Each zone's fabric";
+    parameter Real UAZone[nZones](each unit = "W/K") = {95, 18} "Each zone's fabric to the outdoor air";
+    parameter Real TZoneSet[nZones](each unit = "K") = {292.59, 290.37} "Thermostat setpoints: 67 degF down, 63 degF up";
+    parameter Real dTZoneThrottle(unit = "K") = 1.0 "Span of air temperature, centred on the setpoint, over which a thermostat goes from never calling to always calling";
+    parameter Real tCallMin(unit = "s") = 300 "Shortest call and shortest pause of a thermostat: three cycles an hour at half load";
+    parameter Real PZoneValve(unit = "W") = 175 "What the meter on a zone's thermostat wire reads while the zone calls";
 
     parameter Real TStartPlant(unit = "K") = 303.15 "Every water volume at time zero";
-    parameter Real TStartZone(unit = "K") = 293.15 "Every zone at time zero";
+    parameter Real TStartZone[nZones](each unit = "K") = {292.59, 290.37} "Air and fabric of each zone at time zero: at its setpoint";
 
     Hydronic.RealOutput hpLwt(unit = "K") "Water leaving the heat pump"
       annotation(Placement(transformation(origin = {1590, -45}, extent = {{-5, -5}, {5, 5}})));
@@ -232,7 +235,7 @@ package Beech
       annotation(Placement(transformation(origin = {540, -741}, extent = {{-12, -12}, {12, 12}}, rotation = 180)));
     Hydronic.Volume supplyManifold(C = cWater * VPipe, UA = UAPipe, TSurroundings = TAmbient, TStart = TStartPlant)
       annotation(Placement(transformation(origin = {477, -741}, extent = {{-12, -12}, {12, 12}})));
-    Hydronic.Zones zones(nZones = nZones, c = cWater, dpZoneNominal = dpZoneNominal, VFlowZoneNominal = VFlowZoneNominal, leakage = leakage, CEmitter = CEmitter, UAEmitter = UAEmitter, CZone = CZone, UAZone = UAZone, TZoneSet = TZoneSet, dTZoneDeadband = dTZoneDeadband, PZoneValve = PZoneValve, TStartEmitter = TStartPlant, TStartZone = TStartZone)
+    Hydronic.Zones zones(nZones = nZones, c = cWater, dpZoneNominal = dpZoneNominal, VFlowZoneNominal = VFlowZoneNominal, leakage = leakage, CEmitter = CEmitter, UAEmitter = UAEmitter, CAir = CAir, UAFabric = UAFabric, CFabric = CFabric, UAZone = UAZone, TZoneSet = TZoneSet, dTZoneThrottle = dTZoneThrottle, tCallMin = tCallMin, PZoneValve = PZoneValve, TStartEmitter = TStartPlant, TStartZone = TStartZone)
       annotation(Placement(transformation(origin = {336, -768}, extent = {{-60, -57}, {60, 57}})));
     Hydronic.Volume returnManifold(C = cWater * VPipe, UA = UAPipe, TSurroundings = TAmbient, TStart = TStartPlant) "Sensed pipe returning from the house"
       annotation(Placement(transformation(origin = {225, -750}, extent = {{-12, -12}, {12, 12}}, rotation = 90)));

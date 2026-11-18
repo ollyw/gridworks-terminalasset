@@ -4,6 +4,7 @@ sensing device is simulated, with Beech's two zones and three store
 tanks."""
 
 from collections.abc import Iterator, Mapping
+from itertools import pairwise
 from pathlib import Path
 
 import pytest
@@ -30,9 +31,12 @@ HELD_BY_SCADA = (
     "zone2-up-failsafe-relay",
 )
 SIEG_TRAVEL_S = 94
+CALL_W = 175
+ZONES = ("zone1-down", "zone2-up")
 
-WARM_ZONES = {"TStartZone": 295.15}
-COLD_ZONES = {"TStartZone": 291.15}
+WARM_ZONES = {"TStartZone[1]": 295.15, "TStartZone[2]": 295.15}
+COLD_ZONES = {"TStartZone[1]": 288.15, "TStartZone[2]": 288.15}
+HOT_BUFFER = {"TStartPlant": 350.15, "TBackupAquastat": 351.15, "dTBackupAquastat": 3.0}
 
 
 def layout() -> PlantLayout:
@@ -294,10 +298,11 @@ def test_with_no_scada_the_boiler_heats_the_house_and_the_valve_goes_to_send(
     assert plant.model.read("heatPumpEnergy") == 0.0
     assert values["primary-flow"] == 0
     assert values["buffer-depth2-device"] > start["buffer-depth2-device"] + 1000
-    assert values["zone1-down-whitewire-pwr"] == values["zone2-up-whitewire-pwr"] == 10
-    assert values["dist-flow"] > 300
+    for zone in ZONES:
+        assert CALL_W in {seen[f"{zone}-whitewire-pwr"] for seen in plant.history}
+        assert values[f"{zone}-temp"] > start[f"{zone}-temp"]
+    assert max(seen["dist-flow"] for seen in plant.history) > 250
     assert values["dist-swt"] > start["dist-swt"] + 1000
-    assert values["zone1-down-temp"] > start["zone1-down-temp"]
 
 
 @pytest.mark.fmu
@@ -416,13 +421,13 @@ def test_the_store_charges_from_the_heat_pump_and_discharges_to_the_house(
     plant.put("primary-pump-scada-ops-relay", "RelayOpen")
     plant.put("charge-discharge-relay", "DischargingStore")
     plant.put("store-pump-relay", "RelayClosed")
-    for zone in ("zone1-down", "zone2-up"):
+    for zone in ZONES:
         plant.put(f"{zone}-ops-relay", "RelayClosed")
     discharged = plant.run(30 * 60)
     assert discharged["store-flow"] > 200
     assert discharged["store-pump-pwr"] > 0
     assert plant.model.read("storeCharge") < -1e-4
-    assert discharged["dist-flow"] > 300
+    assert discharged["dist-flow"] > 250
     assert discharged["buffer-depth1-device"] > charged["buffer-depth1-device"] + 500
     assert discharged["tank1-depth1-device"] < charged["tank1-depth1-device"]
 
@@ -439,12 +444,55 @@ def test_a_zone_the_scada_holds_calls_only_when_the_scada_calls_it(
     plant.put("zone2-up-ops-relay", "RelayClosed")
     called = plant.run(10 * 60)
     assert called["zone1-down-whitewire-pwr"] == 0
-    assert called["zone2-up-whitewire-pwr"] == 10
+    assert called["zone2-up-whitewire-pwr"] == CALL_W
     assert called["dist-flow"] > 100
     assert called["dist-pump-pwr"] > 0
-    plant.put("zone2-up-failsafe-relay", "WallThermostat")
     plant.put("zone2-up-ops-relay", "RelayOpen")
-    assert plant.run(10 * 60)["zone2-up-whitewire-pwr"] == 10
+    plant.put("zone1-down-failsafe-relay", "WallThermostat")
+    given_back = plant.run(10 * 60)
+    assert given_back["zone1-down-whitewire-pwr"] == CALL_W
+    assert given_back["zone2-up-whitewire-pwr"] == 0
+
+
+def calls(history: list[dict[str, int]], zone: str) -> list[int]:
+    """How many ticks each of a zone's calls lasted, leaving out one under
+    way at either end of the history."""
+    calling = [seen[f"{zone}-whitewire-pwr"] == CALL_W for seen in history]
+    lengths: list[int] = []
+    begun: int | None = None
+    for tick, (before, now) in enumerate(pairwise(calling), 1):
+        if now and not before:
+            begun = tick
+        elif before and not now and begun is not None:
+            lengths.append(tick - begun)
+    return lengths
+
+
+@pytest.mark.fmu
+def test_the_thermostats_call_as_beechs_did_with_its_buffer_hot(
+    bench: list[Bench],
+) -> None:
+    """Beech overnight on 17 November 2026, its buffer near 77 degC: the
+    down zone, set to 67 degF, called for about six minutes every 50 and
+    its air moved under half a kelvin; the up zone, set to 63 degF, called
+    for five minutes every three and a half hours, and its air rose three
+    kelvin after each call."""
+    plant = open_bench(bench, HOT_BUFFER, scada_in_charge=False)
+    plant.run(4 * 3600)
+    settled = len(plant.history)
+    plant.run(20 * 3600)
+    history = plant.history[settled:]
+    down, up = (calls(history, zone) for zone in ZONES)
+    assert 20 <= len(down) <= 30
+    assert 4 <= len(up) <= 8
+    for minutes in down + up:
+        assert 4 <= minutes <= 8
+    down_air = [seen["zone1-down-temp"] for seen in history]
+    up_air = [seen["zone2-up-temp"] for seen in history]
+    assert max(down_air) - min(down_air) < 80
+    assert 200 < max(up_air) - min(up_air) < 400
+    assert 1944 < min(down_air) and max(down_air) < 2044
+    assert 1722 < min(up_air) and max(up_air) < 2122
 
 
 @pytest.mark.fmu
