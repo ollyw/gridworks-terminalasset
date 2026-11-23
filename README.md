@@ -86,15 +86,16 @@ Modelica model, `modelica/Katahdin.mo`, with no library behind it:
   store and the house by their resistances, reverses through the store
   when the house draws more than the exchanger gives, and stops when a
   pump has nowhere to send it.
-- **Heat follows the water.** Each store tank is nine layers that keep
+- **Heat follows the water.** Each store tank is thirty-six layers that keep
   their stratification, mixing only where a warmer layer lies under a
   colder one. The heat pump's capacity and COP are tables over outdoor
-  temperature and leaving glycol temperature, and its compressor stops at
-  a leaving-temperature limit. Each zone is a thermostat with a deadband,
-  an emitter and a room that loses heat to the outdoors.
+  temperature and leaving glycol temperature; its compressor rises to
+  steady heat on a first-order ramp and stops at a leaving-temperature
+  limit. Each zone is a thermostat with a deadband, an emitter and a room
+  that loses heat to the outdoors.
 - **What it leaves out:** the immersion elements, a firing boiler (the
-  boiler is a volume of water on its branch), defrost, the heat pump's
-  start-up losses and valve travel time.
+  boiler is a volume of water on its branch), defrost and valve travel
+  time.
 
 `scripts/build_fmu.sh` compiles the model with OpenModelica, in docker, to
 `build/KatahdinPlant.fmu`: an FMI 2.0 co-simulation FMU that carries its own
@@ -149,9 +150,12 @@ any of them, and any input no relay drives, at start:
 
 The values are SI (kelvin, m3/s, W, Pa); the parameters and their meanings
 are the declarations at the top of `model Plant`, and a table is set one
-cell at a time. The outdoor temperature (`TOutdoor`) and the two pump
-speeds (`secondaryPumpSpeed`, `distPumpSpeed`, each 0 to 1) are inputs that
-hold their start value through a run: no word carries them to the plant.
+cell at a time. The pump speeds (`secondaryPumpSpeed`, `distPumpSpeed`,
+each 0 to 1) are inputs that hold their start value through a run.
+`--weather-url` and `--weather-bundle` poll that bundle's temperature
+forecast and set `TOutdoor` from it: each slice is a point at the slice's
+start, and between points the temperature moves in a straight line. Until
+the first forecast arrives, `TOutdoor` holds the value it started with.
 
 The plant refuses, by name, a layout it cannot serve: one with a channel
 the model has no value for, one with a number of zone circuits other than
@@ -210,7 +214,13 @@ GWTA_SERVICE_ALIAS=<the layout's TerminalAsset alias> \
 
 A House0 house with a Siegenthaler loop is run from `Beech.Plant`, so the
 house it can be is Beech's: two zone circuits and three store tanks. The
-plant refuses a layout with another count of either.
+plant refuses a layout with another count of either. The buffer and each
+store tank are the house's 119 US gal vessels, each 36 layers, with the
+three depth sensors on the layers whose centres sit near 101, 58 and 5 US
+gal from the bottom; an inverted layer mixes in about a second. The heat
+pump's capacity and COP tables, and a one-minute soft start of compressor
+heat and power, are fitted to Beech's buffer charges with the Millinocket
+forecast outdoor air; the indoor unit draws 36 % of the compressor power.
 `src/gwta/house0.py` says which FMU output each channel reads and which FMU
 input each relay drives:
 
@@ -252,25 +262,33 @@ down then up:
   temperature channel read; it passes heat to the fabric (`UAFabric`,
   `CFabric`), which loses it outdoors (`UAZone`).
 
-The values are fitted to what Beech's thermostat wires, zone temperatures
-and distribution loop showed overnight on 17 November 2026, its buffer near
-77 °C: the down zone called for six minutes every 50 and its air moved
-under half a kelvin, the up zone called for five minutes every three and a
-half hours and its air rose three kelvin after each call, and a call put
-about 6 MJ into the down zone and 4.4 MJ into the up zone. That night's outdoor
-temperature is not in the house's data: the losses are fitted at the
-plant's own -5 °C. The zone resistances (`dpZoneNominal`) are fitted to the
-flows the house's meter showed (2.0 US gpm with the down zone calling, 1.5
-with the up zone, 3.0 with both) with the distribution pump at full speed,
-as it runs here. Each zone starts at its setpoint (`TStartZone`).
+The thermostat timing and emitter sizes are fitted to what Beech's
+thermostat wires, zone temperatures and distribution loop showed overnight
+on 17 November 2026, its buffer near 77 °C: the down zone called for six
+minutes every 50 and its air moved under half a kelvin, the up zone called
+for five minutes every three and a half hours, and its air rose three
+kelvin after each call, and a call put about 6 MJ into the down zone and
+4.4 MJ into the up zone. The zone losses to outdoor air (`UAZone`) are
+fitted to the house's distribution heat on October nights that carry a
+Millinocket forecast outdoor air: about 164 W/K in all, 138 down and 26 up.
+The zone resistances (`dpZoneNominal`) and the distribution pump's own
+shutoff (`dpDistPumpShutoff`) are fitted to the house's meter: 2.0 US gpm
+with the down zone calling, 1.5 with the up zone, 3.0 with both, at full
+speed, and a head of about 11 kPa on the downstairs flow. The pump draws
+7 W at that speed (`PDistPump`). The primary pump draws 15 W
+(`PPrimaryPump`) and its shutoff (`dpPrimaryPumpShutoff`) is set so it
+moves 5.2 US gpm through the heat-pump loop. Each zone starts at its
+setpoint (`TStartZone`).
 
 The Siegenthaler valve takes 94 seconds between its stops and passes from
 all sent to all kept between 26 and 56 seconds of that travel
-(`siegTravel`, `siegOnset`, `siegComplete`). The outdoor temperature
-(`TOutdoor`) and the pump speeds (`primaryPumpSpeed`, `storePumpSpeed`,
-`distPumpSpeed`, each 0 to 1) are inputs that hold their start value
-through a run, and `--fmu-overrides` sets them and any parameter as it does
-for a Katahdin house.
+(`siegTravel`, `siegOnset`, `siegComplete`). The pump speeds
+(`primaryPumpSpeed`, `storePumpSpeed`, `distPumpSpeed`, each 0 to 1) hold
+their start value through a run. `TOutdoor` does the same unless
+`--weather-url` names a service: then it follows that bundle's temperature
+forecast, a straight line between the slices. `--fmu-overrides` sets any
+parameter, and any input the weather is not driving, as it does for a
+Katahdin house.
 
 ## Development
 

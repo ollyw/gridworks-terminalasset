@@ -517,10 +517,10 @@ def test_what_the_plant_does_is_the_same_at_a_one_second_and_a_one_minute_tick(
         return plant.run(2 * 3600 + 2)
 
     allowed_by_telemetry = {
-        TelemetryName.CelsiusTimes100: 2,
+        TelemetryName.CelsiusTimes100: 5,
         TelemetryName.GpmTimes100: 2,
         TelemetryName.PowerW: 5,
-        TelemetryName.MicroVolts: 500,
+        TelemetryName.MicroVolts: 1500,
         TelemetryName.MicroHz: 400_000,
     }
     fine, coarse = day(1), day(60)

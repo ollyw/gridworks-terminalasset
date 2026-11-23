@@ -42,6 +42,7 @@ from pydantic import TypeAdapter
 
 from gwta.config import GwtaSettings
 from gwta.fmu_model import FmuPlantModel
+from gwta.outdoor import OUTDOOR_INPUT, WeatherOutdoor
 from gwta.hello import provision_topology, wait_for_consuming
 from gwta.house0 import house0_model
 from gwta.katahdin import katahdin_model
@@ -126,6 +127,7 @@ class SimulatedPlant(GridworksActor):
         self.layout = layout
         self.model = model
         self.now_ms = now_ms
+        self.outdoor: WeatherOutdoor | None = None
         self.model_lock = threading.Lock()
         self.codec = SemaCodec()
 
@@ -173,6 +175,10 @@ class SimulatedPlant(GridworksActor):
     def next_flux(self) -> SimPlantFlux:
         now_ms = self.now_ms()
         with self.model_lock:
+            if self.outdoor is not None and isinstance(self.model, FmuPlantModel):
+                kelvin = self.outdoor.kelvin_at(now_ms / 1000)
+                if kelvin is not None:
+                    self.model.set_values({OUTDOOR_INPUT: kelvin})
             values = self.model.step(now_ms)
         return SimPlantFlux(
             channel_name_list=list(values),
@@ -248,6 +254,15 @@ def main() -> None:
         "the FMU's own",
     )
     parser.add_argument(
+        "--weather-url",
+        help="the weather service the outdoor temperature is polled from; "
+        "needs --weather-bundle and --fmu",
+    )
+    parser.add_argument(
+        "--weather-bundle",
+        help="the weather bundle whose temperature series is the outdoor air",
+    )
+    parser.add_argument(
         "--no-provision",
         action="store_true",
         help="skip declaring the exchange topology (it already exists)",
@@ -255,6 +270,10 @@ def main() -> None:
     args = parser.parse_args()
     if args.fmu_overrides is not None and args.fmu is None:
         parser.error("--fmu-overrides needs --fmu")
+    if (args.weather_url is None) != (args.weather_bundle is None):
+        parser.error("--weather-url and --weather-bundle are set together")
+    if args.weather_url is not None and args.fmu is None:
+        parser.error("--weather-url needs --fmu")
 
     logging.basicConfig(
         level=logging.INFO,
@@ -292,6 +311,16 @@ def main() -> None:
         model=model,
         now_ms=wall_ms,
     )
+    outdoor: WeatherOutdoor | None = None
+    if args.weather_url is not None:
+        if (
+            not isinstance(model, FmuPlantModel)
+            or OUTDOOR_INPUT not in model.reference_by_variable
+        ):
+            parser.error(f"{args.fmu} has no {OUTDOOR_INPUT} input")
+        outdoor = WeatherOutdoor(args.weather_url, args.weather_bundle)
+        plant.outdoor = outdoor
+        outdoor.start()
     plant.start()
     try:
         wait_for_consuming(plant)
@@ -308,6 +337,8 @@ def main() -> None:
     except KeyboardInterrupt:
         LOGGER.info("[%s] interrupted; stopping", plant.alias)
     finally:
+        if outdoor is not None:
+            outdoor.stop()
         plant.stop()
         model.close()
 

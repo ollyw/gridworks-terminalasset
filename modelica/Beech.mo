@@ -5,8 +5,8 @@ package Beech
     "Relays, pump speeds and weather in; every sensed temperature, flow and power out"
 
     constant Integer nZones = 2 "Zones on the distribution loop: down, up";
-    constant Integer nSeg = 9 "Layers in the buffer and in each store tank";
-    constant Integer sensorCell[3] = {2, 5, 8} "Layer read by each depth sensor of a tank, top first";
+    constant Integer nSeg = 36 "Layers in the buffer and in each store tank";
+    constant Integer sensorCell[3] = {6, 19, 35} "Layer read by each depth sensor of a tank, top first: centres near 101, 58 and 5 US gal from the bottom of a 119 US gal tank";
 
     Hydronic.RealInput hpEnable(start = 0) "The scada's call for the heat pump: 0 no call, 1 call"
       annotation(Placement(transformation(origin = {1365, -112.5}, extent = {{-5, -5}, {5, 5}}, rotation = -90)));
@@ -44,7 +44,9 @@ package Beech
 
     parameter Real VFlowNominal(unit = "m3/s") = 3.155e-4 "Flow at which the branch pressure drops are given: 5 US gpm";
     parameter Real VFlowZoneNominal(unit = "m3/s") = 1.577e-4 "Flow at which dpZoneNominal is given: 2.5 US gpm";
-    parameter Real dpPumpShutoff(unit = "Pa") = 40e3 "Head of each pump at full speed and no flow";
+    parameter Real dpPumpShutoff(unit = "Pa") = 40e3 "Head of the store and boiler pumps at full speed and no flow";
+    parameter Real dpPrimaryPumpShutoff(unit = "Pa") = 35.5e3 "Head of the primary pump at full speed and no flow";
+    parameter Real dpDistPumpShutoff(unit = "Pa") = 13.8e3 "Head of the distribution pump at full speed and no flow";
     parameter Real VFlowPumpMax(unit = "m3/s") = 6.31e-4 "Flow of each pump at full speed and no head";
     parameter Real dpPumpCheckNominal(unit = "Pa") = 1.0e3 "The check valve in a pump's flange, beyond its cracking pressure";
     parameter Real dpCrack(unit = "Pa") = 1.5e3 "Pressure across a check valve at which it opens";
@@ -58,18 +60,18 @@ package Beech
     parameter Real dpChargeNominal(unit = "Pa") = 2.0e3 "Charge/discharge valve, at charge, to the cold header";
     parameter Real dpDischargeNominal(unit = "Pa") = 2.0e3 "Charge/discharge valve, at discharge, to the store pump";
     parameter Real dpBoilerNominal(unit = "Pa") = 3.0e3 "The boiler's branch and its check valve, beyond the cracking pressure";
-    parameter Real dpZoneNominal[nZones](each unit = "Pa") = {38.8e3, 56.7e3} "Each zone's valve and emitter at VFlowZoneNominal";
+    parameter Real dpZoneNominal[nZones](each unit = "Pa") = {13.4e3, 19.6e3} "Each zone's valve and emitter at VFlowZoneNominal";
     parameter Real leakage = 1e-6 "Conductance of a closed valve as a fraction of its open conductance";
     parameter Real VFlowMeterMin(unit = "m3/s") = 1.26e-5 "Flow below which a flow meter reads zero: 0.2 US gpm";
 
-    parameter Real VTank(unit = "m3") = 0.454 "Volume of one store tank: 120 US gal";
+    parameter Real VTank(unit = "m3") = 0.450 "Volume of one store tank: 119 US gal";
     parameter Real hTank(unit = "m") = 1.6 "Water height of one store tank";
     parameter Real UATank(unit = "W/K") = 2.0 "Loss of one store tank to the room";
-    parameter Real VBuffer(unit = "m3") = 0.3;
-    parameter Real hBuffer(unit = "m") = 1.5 "Water height of the buffer";
+    parameter Real VBuffer(unit = "m3") = 0.450 "Volume of the buffer: 119 US gal, the same vessel as a store tank";
+    parameter Real hBuffer(unit = "m") = 1.6 "Water height of the buffer";
     parameter Real UABuffer(unit = "W/K") = 2.0 "Loss of the buffer to the room";
     parameter Real kTankEffective(unit = "W/(m.K)") = 1.5 "Vertical conduction through water and wall";
-    parameter Real tauBuoyancy(unit = "s") = 30 "Time for a layer lying under a colder one to mix with it";
+    parameter Real tauBuoyancy(unit = "s") = 1 "Time for a layer lying under a colder one to mix with it: near-instant on the plant's timescale";
     parameter Real VPipe(unit = "m3") = 1.5e-3 "Water in each header, tee, valve body and sensed pipe run";
     parameter Real UAPipe(unit = "W/K") = 0.5 "Loss of each such run to the room";
     parameter Real TAmbient(unit = "K") = 291.15 "Mechanical room air";
@@ -82,15 +84,19 @@ package Beech
     parameter Real TOutdoorGrid[4](each unit = "K") = {253.15, 263.15, 273.15, 283.15};
     parameter Real TLwtGrid[4](each unit = "K") = {308.15, 323.15, 338.15, 353.15};
     parameter Real QHeatPumpTable[4, 4](each unit = "W") =
-      {{9000, 8500, 8000, 7500}, {11000, 10500, 10000, 9500}, {13000, 12500, 12000, 11500}, {15000, 14500, 14000, 13500}}
-      "Heat output by outdoor and leaving water temperature";
+      {{16000, 15000, 14000, 13000}, {21000, 20500, 20000, 19000}, {23000, 22500, 22000, 21000}, {24500, 24000, 23500, 22500}}
+      "Heat output by outdoor and leaving water temperature, fitted to Beech buffer charges";
     parameter Real COPTable[4, 4] =
-      {{2.4, 2.0, 1.7, 1.4}, {2.9, 2.4, 2.0, 1.7}, {3.5, 2.9, 2.4, 2.0}, {4.3, 3.5, 2.9, 2.4}}
-      "Heat out over compressor power in, by outdoor and leaving water temperature";
-    parameter Real indoorShare = 0.4 "Share of the compressor power drawn by the indoor unit";
+      {{2.0, 1.75, 1.55, 1.35}, {2.4, 2.25, 2.15, 2.05}, {2.55, 2.45, 2.35, 2.2}, {2.7, 2.55, 2.45, 2.4}}
+      "Heat out over compressor power in, by outdoor and leaving water temperature, fitted to Beech buffer charges";
+    parameter Real tauRamp(unit = "s") = 60 "First-order rise of compressor heat and power after a call";
+    parameter Real tauStop(unit = "s") = 5 "Fall of compressor heat and power after the call drops";
+    parameter Real indoorShare = 0.36 "Share of the compressor power drawn by the indoor unit";
     parameter Real PStandbyOutdoor(unit = "W") = 20 "Outdoor unit with the compressors stopped";
     parameter Real PStandbyIndoor(unit = "W") = 10 "Indoor unit with the compressors stopped";
-    parameter Real PPumpNominal(unit = "W") = 60 "Each pump at full speed";
+    parameter Real PPumpNominal(unit = "W") = 60 "Store and boiler pumps at full speed";
+    parameter Real PPrimaryPump(unit = "W") = 15 "Primary pump at full speed";
+    parameter Real PDistPump(unit = "W") = 7 "Distribution pump at full speed";
 
     parameter Real siegTravel(unit = "s") = 94 "Siegenthaler valve motor time from the send stop to the keep stop";
     parameter Real siegOnset(unit = "s") = 26 "Motor time from the send stop at which the valve begins to keep";
@@ -111,7 +117,7 @@ package Beech
     parameter Real CAir[nZones](each unit = "J/K") = {3e6, 0.9e6} "Each zone's air and what warms with it within the hour";
     parameter Real UAFabric[nZones](each unit = "W/K") = {1500, 250} "Each zone's air to its fabric";
     parameter Real CFabric[nZones](each unit = "J/K") = {15e6, 10e6} "Each zone's fabric";
-    parameter Real UAZone[nZones](each unit = "W/K") = {95, 18} "Each zone's fabric to the outdoor air";
+    parameter Real UAZone[nZones](each unit = "W/K") = {138, 26} "Each zone's fabric to the outdoor air";
     parameter Real TZoneSet[nZones](each unit = "K") = {292.59, 290.37} "Thermostat setpoints: 67 degF down, 63 degF up";
     parameter Real dTZoneThrottle(unit = "K") = 1.0 "Span of air temperature, centred on the setpoint, over which a thermostat goes from never calling to always calling";
     parameter Real tCallMin(unit = "s") = 300 "Shortest call and shortest pause of a thermostat: three cycles an hour at half load";
@@ -183,7 +189,7 @@ package Beech
     Hydronic.RealOutput lossEnergy(unit = "J") "Heat lost to the room and the outdoor air since time zero"
       annotation(Placement(transformation(origin = {1590, -1035}, extent = {{-5, -5}, {5, 5}})));
 
-    Hydronic.SplitHeatPump heatPump(C = CHeatPump, UA = UAHeatPump, TSurroundings = TAmbient, VFlowMin = VFlowHeatPumpMin, indoorShare = indoorShare, PStandbyOutdoor = PStandbyOutdoor, PStandbyIndoor = PStandbyIndoor, TLwtMax = TLwtMax, dTLwtRestart = dTLwtRestart, TOutdoorGrid = TOutdoorGrid, TLwtGrid = TLwtGrid, QTable = QHeatPumpTable, COPTable = COPTable, TStart = TStartPlant) "The indoor unit"
+    Hydronic.SplitHeatPump heatPump(C = CHeatPump, UA = UAHeatPump, TSurroundings = TAmbient, VFlowMin = VFlowHeatPumpMin, indoorShare = indoorShare, PStandbyOutdoor = PStandbyOutdoor, PStandbyIndoor = PStandbyIndoor, TLwtMax = TLwtMax, dTLwtRestart = dTLwtRestart, TOutdoorGrid = TOutdoorGrid, TLwtGrid = TLwtGrid, QTable = QHeatPumpTable, COPTable = COPTable, tauRamp = tauRamp, tauStop = tauStop, TStart = TStartPlant) "The indoor unit"
       annotation(Placement(transformation(origin = {1387.5, -210}, extent = {{-45, -60}, {45, 60}})));
     Hydronic.CheckValve hpCheck(c = cWater, dpNominal = dpHeatPumpNominal, VFlowNominal = VFlowNominal, dpCrack = dpCrack, leakage = leakage) "The heat pump's water side and the check valve at its outlet"
       annotation(Placement(transformation(origin = {1294.5, -225}, extent = {{-12, -12}, {12, 12}}, rotation = 180)));
@@ -203,7 +209,7 @@ package Beech
       annotation(Placement(transformation(origin = {1071, -237}, extent = {{-12, -12}, {12, 12}}, rotation = -90)));
     Hydronic.Resistance hpReturn(c = cWater, dpNominal = dpHeatPumpReturnNominal, VFlowNominal = VFlowNominal) "Cold header to the Siegenthaler tee"
       annotation(Placement(transformation(origin = {1002, -375}, extent = {{-12, -12}, {12, 12}}, rotation = 90)));
-    Hydronic.Pump primaryPump(c = cWater, dpShutoff = dpPumpShutoff, VFlowMax = VFlowPumpMax, PNominal = PPumpNominal)
+    Hydronic.Pump primaryPump(c = cWater, dpShutoff = dpPrimaryPumpShutoff, VFlowMax = VFlowPumpMax, PNominal = PPrimaryPump)
       annotation(Placement(transformation(origin = {1180.5, -255}, extent = {{-12, -12}, {12, 12}})));
     Hydronic.Changeover primaryPumpRelay "Who runs the primary pump: at rest the heat pump, driven the scada"
       annotation(Placement(transformation(origin = {1140, -217.5}, extent = {{-12, -12}, {12, 12}})));
@@ -231,7 +237,7 @@ package Beech
       annotation(Placement(transformation(origin = {699, -450}, extent = {{-12, -12}, {12, 12}}, rotation = -90)));
     Hydronic.Volume airSeparator(C = cWater * VPipe, UA = UAPipe, TSurroundings = TAmbient, TStart = TStartPlant) "Sensed pipe supplying the house"
       annotation(Placement(transformation(origin = {631.5, -741}, extent = {{-12, -12}, {12, 12}})));
-    Hydronic.Pump distPump(c = cWater, dpShutoff = dpPumpShutoff, VFlowMax = VFlowPumpMax, PNominal = PPumpNominal) "The distribution pump, run while a zone valve is open"
+    Hydronic.Pump distPump(c = cWater, dpShutoff = dpDistPumpShutoff, VFlowMax = VFlowPumpMax, PNominal = PDistPump) "The distribution pump, run while a zone valve is open"
       annotation(Placement(transformation(origin = {540, -741}, extent = {{-12, -12}, {12, 12}}, rotation = 180)));
     Hydronic.Volume supplyManifold(C = cWater * VPipe, UA = UAPipe, TSurroundings = TAmbient, TStart = TStartPlant)
       annotation(Placement(transformation(origin = {477, -741}, extent = {{-12, -12}, {12, 12}})));

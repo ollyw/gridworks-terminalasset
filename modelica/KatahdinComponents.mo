@@ -5,8 +5,8 @@ package KatahdinComponents
     "Valve positions, pump commands and weather in; every sensed temperature, flow and power out"
 
     constant Integer nZones = 4 "Zones on the distribution loop";
-    constant Integer nSeg = 9 "Layers in each store tank";
-    constant Integer sensorCell[3] = {2, 5, 8} "Layer read by each depth sensor of a tank, top first";
+    constant Integer nSeg = 36 "Layers in each store tank";
+    constant Integer sensorCell[3] = {6, 19, 35} "Layer read by each depth sensor of a tank, top first: centres near 101, 58 and 5 US gal from the bottom of a 119 US gal tank";
 
     Hydronic.RealInput v1Position(start = 0) "V1, exchanger to supply header: 0 closed, 1 open"
       annotation(Placement(transformation(origin = {-110, 62}, extent = {{-5, -5}, {5, 5}}, rotation = -90)));
@@ -52,11 +52,11 @@ package KatahdinComponents
     parameter Real leakage = 1e-6 "Conductance of a closed valve as a fraction of its open conductance";
     parameter Real VFlowMeterMin(unit = "m3/s") = 1.26e-5 "Flow below which a flow meter reads zero: 0.2 US gpm";
 
-    parameter Real VTank(unit = "m3") = 0.3 "Volume of one store tank";
-    parameter Real hTank(unit = "m") = 1.5 "Water height of one store tank";
+    parameter Real VTank(unit = "m3") = 0.450 "Volume of one store tank: 119 US gal";
+    parameter Real hTank(unit = "m") = 1.6 "Water height of one store tank";
     parameter Real UATank(unit = "W/K") = 2.0 "Loss of one store tank to the room";
     parameter Real kTankEffective(unit = "W/(m.K)") = 1.5 "Vertical conduction through water and wall";
-    parameter Real tauBuoyancy(unit = "s") = 30 "Time for a layer lying under a colder one to mix with it";
+    parameter Real tauBuoyancy(unit = "s") = 1 "Time for a layer lying under a colder one to mix with it: near-instant on the plant's timescale";
 
     parameter Real UAExchanger(unit = "W/K") = 3000 "Plate exchanger at design flow";
     parameter Real UAExchangerStatic(unit = "W/K") = 20 "Conduction across the plates with no flow";

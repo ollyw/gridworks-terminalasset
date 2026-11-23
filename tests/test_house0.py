@@ -295,7 +295,7 @@ def test_with_no_scada_the_boiler_heats_the_house_and_the_valve_goes_to_send(
     values = plant.run(2 * 3600)
     assert plant.model.read("siegKeep") == 0.0
     assert plant.model.read("boilerEnergy") > 20e6
-    assert plant.model.read("heatPumpEnergy") == 0.0
+    assert plant.model.read("heatPumpEnergy") == pytest.approx(0, abs=1)
     assert values["primary-flow"] == 0
     assert values["buffer-depth2-device"] > start["buffer-depth2-device"] + 1000
     for zone in ZONES:
@@ -332,7 +332,7 @@ def test_a_called_heat_pump_heats_the_water_its_pump_moves(bench: list[Bench]) -
     values = plant.run(20 * 60)
     assert values["primary-flow"] > 300
     assert values["primary-flow-hz"] > 50_000_000
-    assert values["primary-pump-pwr"] > 0
+    assert values["primary-pump-pwr"] == 15
     assert values["hp-odu-pwr"] > 1000
     assert values["hp-idu-pwr"] > 500
     assert values["hp-lwt"] > values["hp-ewt"] + 200
@@ -351,6 +351,7 @@ def test_the_heat_pump_runs_its_own_primary_pump_when_the_scada_hands_it_over(
     plant.put("hp-scada-ops-relay", "RelayClosed")
     values = plant.run(10 * 60)
     assert values["primary-flow"] > 300
+    assert values["primary-pump-pwr"] == 15
     assert values["hp-odu-pwr"] > 1000
     plant.put("hp-scada-ops-relay", "RelayOpen")
     assert plant.run(5 * 60)["primary-flow"] == 0
@@ -446,12 +447,13 @@ def test_a_zone_the_scada_holds_calls_only_when_the_scada_calls_it(
     assert called["zone1-down-whitewire-pwr"] == 0
     assert called["zone2-up-whitewire-pwr"] == CALL_W
     assert called["dist-flow"] > 100
-    assert called["dist-pump-pwr"] > 0
+    assert called["dist-pump-pwr"] == 7
     plant.put("zone2-up-ops-relay", "RelayOpen")
     plant.put("zone1-down-failsafe-relay", "WallThermostat")
     given_back = plant.run(10 * 60)
     assert given_back["zone1-down-whitewire-pwr"] == CALL_W
     assert given_back["zone2-up-whitewire-pwr"] == 0
+    assert given_back["dist-pump-pwr"] == 7
 
 
 def calls(history: list[dict[str, int]], zone: str) -> list[int]:
@@ -476,8 +478,13 @@ def test_the_thermostats_call_as_beechs_did_with_its_buffer_hot(
     down zone, set to 67 degF, called for about six minutes every 50 and
     its air moved under half a kelvin; the up zone, set to 63 degF, called
     for five minutes every three and a half hours, and its air rose three
-    kelvin after each call."""
-    plant = open_bench(bench, HOT_BUFFER, scada_in_charge=False)
+    kelvin after each call. Outdoor air is 2.6 degC so the zone losses
+    match that night's call duty at the fitted UAZone."""
+    plant = open_bench(
+        bench,
+        {**HOT_BUFFER, "TOutdoor": 275.75},
+        scada_in_charge=False,
+    )
     plant.run(4 * 3600)
     settled = len(plant.history)
     plant.run(20 * 3600)

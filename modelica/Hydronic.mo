@@ -259,7 +259,7 @@ package Hydronic
   end Expansion;
 
   partial model HeatPumpCycle
-    "A heat pump's compressor and the fluid in its condenser: heat output and COP by outdoor and leaving temperature, and a compressor that stops at a leaving-temperature limit"
+    "A heat pump's compressor and the fluid in its condenser: heat output and COP by outdoor and leaving temperature, a first-order soft start after a call, and a compressor that stops at a leaving-temperature limit"
     parameter Real C(unit = "J/K") "Fluid and metal in the condenser";
     parameter Real TLwtMax(unit = "K") "Leaving temperature at which the compressor stops";
     parameter Real dTLwtRestart(unit = "K") "Fall below TLwtMax at which the compressor may restart";
@@ -267,19 +267,23 @@ package Hydronic
     parameter Real TLwtGrid[:](each unit = "K");
     parameter Real QTable[size(TOutdoorGrid, 1), size(TLwtGrid, 1)](each unit = "W") "Heat output by outdoor and leaving temperature";
     parameter Real COPTable[size(TOutdoorGrid, 1), size(TLwtGrid, 1)] "Heat out over compressor power in, by outdoor and leaving temperature";
+    parameter Real tauRamp(unit = "s") = 60 "First-order rise of compressor heat and power after a call";
+    parameter Real tauStop(unit = "s") = 5 "Fall of compressor heat and power after the call drops";
     parameter Real TStart(unit = "K") "Temperature at time zero";
     Real T(unit = "K", start = TStart, fixed = true) "Fluid leaving";
     Boolean lwtPermit(start = true, fixed = true);
-    Real compressor "1 while the compressor runs";
+    Real compressor(start = 0, fixed = true) "0 to 1: share of steady heat and power the compressor has reached";
     Real Q(unit = "W") "Heat put into the fluid";
     Real PCompressor(unit = "W");
     Real E(unit = "J") = C * (T - 273.15) "Heat held, above 0 degC";
   protected
     Real asked "1 while the compressor is asked to run";
     Real TAir(unit = "K") "Outdoor air";
+    Real target "1 while the compressor may run at steady heat";
   equation
     lwtPermit = if pre(lwtPermit) then T < TLwtMax else T < TLwtMax - dTLwtRestart;
-    compressor = asked * (if lwtPermit then 1 else 0);
+    target = asked * (if lwtPermit then 1 else 0);
+    der(compressor) = (target - compressor) / (if target > compressor then tauRamp else tauStop);
     Q = compressor * bilinear(TAir, T, TOutdoorGrid, TLwtGrid, QTable);
     PCompressor = Q / bilinear(TAir, T, TOutdoorGrid, TLwtGrid, COPTable);
   end HeatPumpCycle;
